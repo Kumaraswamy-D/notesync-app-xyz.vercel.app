@@ -3,41 +3,91 @@
 <head>
   <title>NoteSync</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <style>
     body {
-      font-family: Arial;
       margin: 0;
-      background: linear-gradient(to right, #ff9a9e, #fad0c4);
-      text-align: center;
+      font-family: Arial;
+      background: #0f172a;
+      color: gold;
     }
-    nav button {
-      margin: 5px;
-      padding: 8px 12px;
+
+    h2 {
+      text-align: center;
+      padding: 10px;
+    }
+
+    #loginDiv {
+      text-align: center;
+      margin-top: 80px;
+    }
+
+    input {
+      padding: 10px;
+      margin: 8px;
+      border-radius: 8px;
+      border: none;
+      width: 80%;
+    }
+
+    button {
+      padding: 10px 20px;
       border-radius: 20px;
       border: none;
-      background: #ff4d6d;
-      color: white;
+      background: gold;
+      color: black;
+      font-weight: bold;
       cursor: pointer;
     }
-    .section { display: none; padding: 10px; }
+
+    #mainDiv {
+      display: none;
+      padding-bottom: 70px;
+    }
+
+    .section {
+      display: none;
+      padding: 15px;
+    }
+
     #chatBox {
       height: 250px;
       overflow-y: scroll;
-      background: white;
+      background: #1e293b;
       padding: 10px;
       border-radius: 10px;
+      color: white;
     }
-    input, button {
-      padding: 8px;
-      margin: 5px;
-      border-radius: 8px;
-      border: none;
+
+    .bottomNav {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      background: #1e293b;
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 0;
+    }
+
+    .bottomNav button {
+      background: none;
+      color: gold;
+      font-size: 14px;
+    }
+
+    .card {
+      background: #1e293b;
+      padding: 15px;
+      border-radius: 12px;
+      margin: 10px 0;
+      color: white;
     }
   </style>
 </head>
+
 <body>
 
-<h2>💖 NoteSync 💖</h2>
+<h2>💛 NoteSync 💛</h2>
 
 <div id="loginDiv">
   <input type="email" id="email" placeholder="Email"><br>
@@ -45,37 +95,34 @@
   <button id="loginBtn">Login</button>
 </div>
 
-<div id="mainDiv" style="display:none;">
+<div id="mainDiv">
 
-  <nav>
-    <button onclick="showSection('chat')">💬 Chat</button>
-    <button onclick="showSection('celebration')">🎉 Celebration</button>
-    <button onclick="showSection('dates')">📅 Important Dates</button>
-    <button id="logoutBtn">Logout</button>
-  </nav>
+  <div id="dashboard" class="section">
+    <div class="card">
+      <h3 id="welcome"></h3>
+      <p>❤️ Together Since: 01 Jan 2024</p>
+      <p id="loveDays"></p>
+    </div>
+  </div>
 
-  <h3 id="welcome"></h3>
-
-  <!-- CHAT -->
   <div id="chat" class="section">
     <div id="chatBox"></div>
     <input type="text" id="messageInput" placeholder="Type message">
     <button id="sendBtn">Send</button>
   </div>
 
-  <!-- CELEBRATION -->
-  <div id="celebration" class="section">
-    <input type="text" id="celebrateText" placeholder="Write something special">
-    <button onclick="addCelebration()">Add</button>
-    <div id="celebrationList"></div>
-  </div>
-
-  <!-- DATES -->
   <div id="dates" class="section">
     <input type="text" id="dateTitle" placeholder="Event Name">
     <input type="date" id="dateValue">
     <button onclick="addDate()">Save</button>
     <div id="dateList"></div>
+  </div>
+
+  <div class="bottomNav">
+    <button onclick="showSection('dashboard')">Home</button>
+    <button onclick="showSection('chat')">Chat</button>
+    <button onclick="showSection('dates')">Dates</button>
+    <button onclick="logout()">Logout</button>
   </div>
 
 </div>
@@ -104,93 +151,82 @@ const allowedUsers = {
 };
 
 document.getElementById("loginBtn").onclick = async () => {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-
+  const email = emailInput.value;
+  const password = passwordInput.value;
   try {
-    const userCred = await signInWithEmailAndPassword(auth, email, password);
-    if (!allowedUsers[email]) {
+    const userCred = await signInWithEmailAndPassword(auth,email,password);
+    if(!allowedUsers[email]){
       alert("Access Denied");
       await signOut(auth);
     }
-  } catch (err) {
+  } catch(err){
     alert(err.message);
   }
 };
 
-document.getElementById("logoutBtn").onclick = () => signOut(auth);
+onAuthStateChanged(auth,user=>{
+  if(user && allowedUsers[user.email]){
+    loginDiv.style.display="none";
+    mainDiv.style.display="block";
+    welcome.innerText="Welcome "+allowedUsers[user.email];
+    showSection("dashboard");
 
-onAuthStateChanged(auth, user => {
-  if (user && allowedUsers[user.email]) {
-    loginDiv.style.display = "none";
-    mainDiv.style.display = "block";
-    welcome.innerText = "Welcome " + allowedUsers[user.email];
-    showSection("chat");
+    const startDate=new Date("2024-01-01");
+    const today=new Date();
+    const diff=Math.floor((today-startDate)/(1000*60*60*24));
+    loveDays.innerText="❤️ Love Days: "+diff;
   } else {
-    loginDiv.style.display = "block";
-    mainDiv.style.display = "none";
+    loginDiv.style.display="block";
+    mainDiv.style.display="none";
   }
 });
 
-/* CHAT */
-document.getElementById("sendBtn").onclick = async () => {
-  const text = messageInput.value;
-  if (text.trim() === "") return;
+window.logout=function(){
+  signOut(auth);
+};
 
+window.showSection=function(id){
+  document.querySelectorAll(".section").forEach(sec=>sec.style.display="none");
+  document.getElementById(id).style.display="block";
+};
+
+document.getElementById("sendBtn").onclick=async()=>{
+  const text=messageInput.value;
+  if(text==="") return;
   await addDoc(collection(db,"messages"),{
-    text: text,
-    user: allowedUsers[auth.currentUser.email],
-    time: Date.now()
+    text:text,
+    user:allowedUsers[auth.currentUser.email],
+    time:Date.now()
   });
-
   messageInput.value="";
 };
 
-const q = query(collection(db,"messages"), orderBy("time"));
-onSnapshot(q, snapshot=>{
+const q=query(collection(db,"messages"),orderBy("time"));
+onSnapshot(q,snap=>{
   chatBox.innerHTML="";
-  snapshot.forEach(doc=>{
+  snap.forEach(doc=>{
     const msg=doc.data();
     chatBox.innerHTML+=`<p><b>${msg.user}:</b> ${msg.text}</p>`;
   });
   chatBox.scrollTop=chatBox.scrollHeight;
 });
 
-/* CELEBRATION */
-window.addCelebration = async ()=>{
-  const text=document.getElementById("celebrateText").value;
-  if(text==="") return;
-  await addDoc(collection(db,"celebrations"),{text});
-  celebrateText.value="";
-};
-
-onSnapshot(collection(db,"celebrations"), snap=>{
-  celebrationList.innerHTML="";
-  snap.forEach(doc=>{
-    celebrationList.innerHTML+=`<p>💖 ${doc.data().text}</p>`;
+window.addDate=async()=>{
+  if(dateTitle.value===""||dateValue.value==="") return;
+  await addDoc(collection(db,"dates"),{
+    title:dateTitle.value,
+    date:dateValue.value
   });
-});
-
-/* DATES */
-window.addDate = async ()=>{
-  const title=dateTitle.value;
-  const date=dateValue.value;
-  if(title===""||date==="") return;
-  await addDoc(collection(db,"dates"),{title,date});
-  dateTitle.value=""; dateValue.value="";
+  dateTitle.value="";
+  dateValue.value="";
 };
 
-onSnapshot(collection(db,"dates"), snap=>{
+onSnapshot(collection(db,"dates"),snap=>{
   dateList.innerHTML="";
   snap.forEach(doc=>{
-    dateList.innerHTML+=`<p>📅 ${doc.data().title} - ${doc.data().date}</p>`;
+    dateList.innerHTML+=`<div class="card">📅 ${doc.data().title} - ${doc.data().date}</div>`;
   });
 });
-
-window.showSection = function(id){
-  document.querySelectorAll(".section").forEach(sec=>sec.style.display="none");
-  document.getElementById(id).style.display="block";
-};
 </script>
 
 </body>
