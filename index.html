@@ -1,87 +1,119 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NoteSync</title>
+  <title>NoteSync</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<style>
-body {
-  font-family: Arial;
-  text-align: center;
-  background: #f4f6f9;
-}
+  <style>
+    body {
+      font-family: Arial;
+      margin: 0;
+      background: linear-gradient(to right, #ff9a9e, #fad0c4);
+      text-align: center;
+      color: #333;
+    }
 
-h2 {
-  color: #333;
-}
+    h2 {
+      margin-top: 15px;
+    }
 
-#chatBox {
-  height: 300px;
-  overflow-y: scroll;
-  background: white;
-  margin: 10px;
-  padding: 10px;
-  border-radius: 10px;
-  border: 1px solid #ccc;
-  text-align: left;
-}
+    nav button {
+      margin: 5px;
+      padding: 10px 15px;
+      border-radius: 20px;
+      border: none;
+      background: #ff4d6d;
+      color: white;
+      cursor: pointer;
+    }
 
-input, button {
-  padding: 10px;
-  margin: 5px;
-  border-radius: 5px;
-  border: none;
-  width: 90%;
-  max-width: 300px;
-}
+    .section {
+      display: none;
+      padding: 10px;
+    }
 
-button {
-  background: #4CAF50;
-  color: white;
-}
+    #chatBox {
+      height: 250px;
+      overflow-y: scroll;
+      background: white;
+      padding: 10px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+    }
 
-img {
-  max-width: 200px;
-  border-radius: 10px;
-  margin-top: 5px;
-}
-</style>
+    input, button {
+      padding: 8px;
+      margin: 5px;
+      border-radius: 8px;
+      border: none;
+    }
+
+    .romantic-card {
+      background: white;
+      padding: 10px;
+      margin: 10px;
+      border-radius: 15px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    .dark {
+      background: #111;
+      color: white;
+    }
+  </style>
 </head>
 <body>
 
-<h2>NoteSync</h2>
+<h2>💖 NoteSync 💖</h2>
 
 <div id="loginDiv">
-  <input type="email" id="email" placeholder="Email"><br>
-  <input type="password" id="password" placeholder="Password"><br>
-  <button onclick="login()">Login</button>
+  <button id="loginBtn">Login with Google</button>
 </div>
 
-<div id="appDiv" style="display:none;">
+<div id="mainDiv" style="display:none;">
 
-  <h3>Chat</h3>
-  <div id="chatBox"></div>
+  <nav>
+    <button onclick="showSection('chat')">💬 Chat</button>
+    <button onclick="showSection('celebration')">🎉 Celebration</button>
+    <button onclick="showSection('dates')">📅 Important Dates</button>
+    <button id="darkBtn">🌙 Dark</button>
+    <button id="logoutBtn">Logout</button>
+  </nav>
 
-  <input type="text" id="message" placeholder="Type message"><br>
-  <input type="file" id="imageInput"><br>
-  <button onclick="sendMessage()">Send</button>
-  <button onclick="logout()">Logout</button>
+  <!-- CHAT -->
+  <div id="chat" class="section">
+    <div id="chatBox"></div>
+    <input type="text" id="messageInput" placeholder="Type message">
+    <button id="sendBtn">Send</button>
+  </div>
 
-  <hr>
+  <!-- CELEBRATION -->
+  <div id="celebration" class="section">
+    <div class="romantic-card">
+      <h3>🎂 Celebration Wall</h3>
+      <input type="text" id="celebrateText" placeholder="Write something special">
+      <button onclick="addCelebration()">Add</button>
+      <div id="celebrationList"></div>
+    </div>
+  </div>
 
-  <h3>Celebrations 🎉</h3>
-  <input type="text" id="eventName" placeholder="Event name">
-  <input type="date" id="eventDate"><br>
-  <button onclick="addEvent()">Add Event</button>
-
-  <div id="eventList"></div>
+  <!-- IMPORTANT DATES -->
+  <div id="dates" class="section">
+    <div class="romantic-card">
+      <h3>📅 Important Dates</h3>
+      <input type="text" id="dateTitle" placeholder="Event Name">
+      <input type="date" id="dateValue">
+      <button onclick="addDate()">Save</button>
+      <div id="dateList"></div>
+    </div>
+  </div>
 
 </div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDEl579k9r9NxIVss_QtQTNLoa25CGGSbI",
@@ -93,105 +125,123 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+const auth = getAuth();
+const db = getFirestore();
+const provider = new GoogleAuthProvider();
 
-window.login = function() {
-  const emailVal = document.getElementById("email").value;
-  const passwordVal = document.getElementById("password").value;
+const allowedUsers = [
+  "kumaraswamyd2005@gmail.com",
+  "poojaprasanna089@gmail.com"
+];
 
-  signInWithEmailAndPassword(auth, emailVal, passwordVal)
-  .catch(error => alert(error.message));
-}
+const loginBtn = document.getElementById("loginBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+const mainDiv = document.getElementById("mainDiv");
 
-window.logout = function() {
-  signOut(auth);
-}
-
-window.sendMessage = async function() {
-  const text = document.getElementById("message").value;
-  const file = document.getElementById("imageInput").files[0];
-
-  let imageData = "";
-
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = async function(e) {
-      imageData = e.target.result;
-      await saveMessage(text, imageData);
-    };
-    reader.readAsDataURL(file);
-  } else {
-    await saveMessage(text, "");
+loginBtn.onclick = async () => {
+  const result = await signInWithPopup(auth, provider);
+  if (!allowedUsers.includes(result.user.email)) {
+    alert("Access Denied");
+    await signOut(auth);
   }
+};
 
-  document.getElementById("message").value = "";
-  document.getElementById("imageInput").value = "";
-}
+logoutBtn.onclick = () => signOut(auth);
 
-async function saveMessage(text, imageData) {
-  if(text.trim() === "" && imageData === "") return;
+onAuthStateChanged(auth, user => {
+  if (user && allowedUsers.includes(user.email)) {
+    loginDiv.style.display = "none";
+    mainDiv.style.display = "block";
+    showSection('chat');
+  } else {
+    loginDiv.style.display = "block";
+    mainDiv.style.display = "none";
+  }
+});
+
+/* CHAT */
+const chatBox = document.getElementById("chatBox");
+const messageInput = document.getElementById("messageInput");
+const sendBtn = document.getElementById("sendBtn");
+
+sendBtn.onclick = async () => {
+  if(messageInput.value.trim() === "") return;
 
   await addDoc(collection(db, "messages"), {
-    text: text,
-    image: imageData,
+    text: messageInput.value,
     user: auth.currentUser.email,
     time: Date.now()
   });
-}
 
-window.addEvent = async function() {
-  const name = document.getElementById("eventName").value;
-  const date = document.getElementById("eventDate").value;
+  messageInput.value = "";
+};
 
-  if(name && date) {
-    await addDoc(collection(db, "events"), {
-      name,
-      date
-    });
-  }
-
-  document.getElementById("eventName").value = "";
-  document.getElementById("eventDate").value = "";
-}
-
-onAuthStateChanged(auth, user => {
-  const loginDiv = document.getElementById("loginDiv");
-  const appDiv = document.getElementById("appDiv");
-  const chatBox = document.getElementById("chatBox");
-  const eventList = document.getElementById("eventList");
-
-  if (user) {
-    loginDiv.style.display = "none";
-    appDiv.style.display = "block";
-
-    const q = query(collection(db, "messages"), orderBy("time"));
-    onSnapshot(q, snapshot => {
-      chatBox.innerHTML = "";
-      snapshot.forEach(doc => {
-        let msg = doc.data();
-        chatBox.innerHTML += `<p><b>${msg.user}:</b> ${msg.text}</p>`;
-        if(msg.image){
-          chatBox.innerHTML += `<img src="${msg.image}" width="200">`;
-        }
-      });
-    });
-
-    onSnapshot(collection(db, "events"), snapshot => {
-      eventList.innerHTML = "";
-      snapshot.forEach(doc => {
-        let e = doc.data();
-        eventList.innerHTML += `<p>${e.name} - ${e.date}</p>`;
-      });
-    });
-
-  } else {
-    loginDiv.style.display = "block";
-    appDiv.style.display = "none";
-  }
+const q = query(collection(db, "messages"), orderBy("time"));
+onSnapshot(q, snapshot => {
+  chatBox.innerHTML = "";
+  snapshot.forEach(doc => {
+    const msg = doc.data();
+    chatBox.innerHTML += `<p><b>${msg.user}:</b> ${msg.text}</p>`;
+  });
+  chatBox.scrollTop = chatBox.scrollHeight;
 });
+
+/* CELEBRATION */
+window.addCelebration = async () => {
+  const text = document.getElementById("celebrateText").value;
+  if(text.trim()==="") return;
+
+  await addDoc(collection(db,"celebrations"),{
+    text:text,
+    time:Date.now()
+  });
+
+  document.getElementById("celebrateText").value="";
+};
+
+onSnapshot(collection(db,"celebrations"), snapshot=>{
+  const list=document.getElementById("celebrationList");
+  list.innerHTML="";
+  snapshot.forEach(doc=>{
+    list.innerHTML+=`<p>💖 ${doc.data().text}</p>`;
+  });
+});
+
+/* DATES */
+window.addDate = async () => {
+  const title=document.getElementById("dateTitle").value;
+  const date=document.getElementById("dateValue").value;
+  if(title===""||date==="") return;
+
+  await addDoc(collection(db,"dates"),{
+    title:title,
+    date:date
+  });
+
+  document.getElementById("dateTitle").value="";
+  document.getElementById("dateValue").value="";
+};
+
+onSnapshot(collection(db,"dates"), snapshot=>{
+  const list=document.getElementById("dateList");
+  list.innerHTML="";
+  snapshot.forEach(doc=>{
+    list.innerHTML+=`<p>📅 ${doc.data().title} - ${doc.data().date}</p>`;
+  });
+});
+
+/* NAVIGATION */
+window.showSection = function(id){
+  document.querySelectorAll(".section").forEach(sec=>sec.style.display="none");
+  document.getElementById(id).style.display="block";
+};
+
+/* DARK MODE */
+document.getElementById("darkBtn").onclick=()=>{
+  document.body.classList.toggle("dark");
+};
+
 </script>
 
 </body>
 </html>
-
