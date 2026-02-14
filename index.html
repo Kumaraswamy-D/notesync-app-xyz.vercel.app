@@ -2,75 +2,58 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Notesync 💕</title>
+<title>KP 💖 Private Space</title>
 
 <style>
 body{
   margin:0;
-  font-family: 'Segoe UI', sans-serif;
-  background: linear-gradient(135deg,#ff758c,#ff7eb3);
+  font-family: Arial;
+  background:#0c1222;
   color:white;
-  text-align:center;
 }
 
 .container{
   padding:20px;
-}
-
-h1{
-  margin-top:5px;
-}
-
-.card{
-  background:white;
-  color:black;
-  padding:15px;
-  border-radius:15px;
-  margin:10px 0;
-}
-
-input,button{
-  padding:10px;
-  margin:5px;
-  border:none;
-  border-radius:8px;
+  text-align:center;
 }
 
 button{
-  background:#ff4d6d;
-  color:white;
+  padding:8px 15px;
+  margin:5px;
+  border:none;
+  border-radius:8px;
+  background:#d4af37;
   cursor:pointer;
 }
 
-.nav button{
+input{
+  padding:8px;
   margin:5px;
+  border-radius:8px;
+  border:none;
 }
 
-.section{
-  display:none;
-}
+.section{ display:none; }
+.active{ display:block; }
 
-.active{
-  display:block;
+.card{
+  background:#1a2238;
+  padding:20px;
+  border-radius:15px;
+  margin:15px 0;
 }
 
 #chatBox{
-  background:white;
-  color:black;
-  height:200px;
+  background:#111;
+  height:250px;
   overflow-y:auto;
   padding:10px;
   border-radius:10px;
-  margin-bottom:10px;
+  text-align:left;
 }
 
-#secretBox{
-  background:white;
-  color:black;
-  max-height:200px;
-  overflow-y:auto;
-  padding:10px;
-  border-radius:10px;
+.msg{
+  margin:5px 0;
 }
 </style>
 </head>
@@ -79,8 +62,7 @@ button{
 
 <div class="container">
 
-<h1>💖 Kumaraswamy D ❤️ Pooja 💖</h1>
-<p id="statusText">Checking status...</p>
+<h2>💖 Kumaraswamy ❤️ Pooja 💖</h2>
 
 <!-- LOGIN -->
 <div id="loginDiv">
@@ -92,30 +74,45 @@ button{
 <!-- APP -->
 <div id="appDiv" style="display:none;">
 
-<div class="card">
-  <h3>💞 Next Special Day</h3>
-  <p id="countdown"></p>
-</div>
-
-<div class="nav">
+<div>
+  <button onclick="showSection('home')">Home</button>
   <button onclick="showSection('chat')">Chat</button>
-  <button onclick="showSection('secret')">Secret Messages</button>
+  <button onclick="showSection('special')">Special Box</button>
   <button onclick="logout()">Logout</button>
 </div>
 
-<!-- CHAT -->
-<div id="chat" class="section active">
-  <div id="chatBox"></div>
-  <input type="text" id="message" placeholder="Type message">
-  <button onclick="sendMessage()">Send</button>
+<!-- HOME -->
+<div id="home" class="section active">
+
+<div class="card">
+<h3>💞 Together Since 25-11-2023</h3>
+<p id="loveDays"></p>
 </div>
 
-<!-- SECRET -->
-<div id="secret" class="section">
-  <h3>💌 Special Messages</h3>
-  <input type="text" id="secretMsg" placeholder="Write special message">
-  <button onclick="sendSecret()">Send</button>
-  <div id="secretBox"></div>
+<div class="card">
+<h3>🎂 Next Celebration</h3>
+<p id="nextEvent"></p>
+</div>
+
+<div class="card">
+<h3>🟢 Status</h3>
+<p id="statusBox"></p>
+</div>
+
+</div>
+
+<!-- CHAT -->
+<div id="chat" class="section">
+<div id="chatBox"></div>
+<input type="text" id="message" placeholder="Type message">
+<button onclick="sendMessage()">Send</button>
+</div>
+
+<!-- SPECIAL MESSAGE BOX -->
+<div id="special" class="section">
+<div id="specialBox"></div>
+<input type="text" id="specialMessage" placeholder="Secret / Birthday Wish">
+<button onclick="sendSpecial()">Send</button>
 </div>
 
 </div>
@@ -141,79 +138,62 @@ const auth = getAuth();
 const db = getFirestore();
 
 const allowedUsers = {
-  "kumaraswamyd2005@gmail.com": "Kumaraswamy D ❤️",
+  "kumaraswamyd2005@gmail.com": "Kumaraswamy ❤️",
   "poojaprasanna089@gmail.com": "Pooja ❤️"
 };
 
-// Countdown Logic
-function calculateNextEvent(){
-  const today = new Date();
-  const events = [
-    {name:"Kumaraswamy Birthday 🎂", date:new Date(today.getFullYear(),1,19)},
-    {name:"Pooja Birthday 🎂", date:new Date(today.getFullYear(),11,7)},
-    {name:"Anniversary 💍", date:new Date(today.getFullYear(),10,25)}
-  ];
-
-  events.forEach(e=>{
-    if(e.date < today){
-      e.date.setFullYear(today.getFullYear()+1);
-    }
-  });
-
-  events.sort((a,b)=>a.date-b.date);
-
-  const diff = Math.ceil((events[0].date - today)/(1000*60*60*24));
-  document.getElementById("countdown").innerText =
-    events[0].name + " in " + diff + " days 💖";
-}
-
-calculateNextEvent();
-
 window.login = function(){
-  const email=document.getElementById("email").value;
-  const password=document.getElementById("password").value;
-
-  if(!allowedUsers[email]){
-    alert("Not Allowed");
-    return;
-  }
-
-  signInWithEmailAndPassword(auth,email,password)
-  .catch(err=>alert(err.message));
+  const email = email.value;
+  const password = password.value;
+  if(!allowedUsers[email]) return alert("Not Allowed");
+  signInWithEmailAndPassword(auth,email,password);
 }
 
-window.logout=function(){
+window.logout = function(){
+  setDoc(doc(db,"users",auth.currentUser.email),{status:"offline"});
   signOut(auth);
 }
 
-window.showSection=function(id){
-  document.querySelectorAll(".section").forEach(sec=>sec.classList.remove("active"));
+window.showSection = function(id){
+  document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
   document.getElementById(id).classList.add("active");
 }
 
-window.sendMessage=async function(){
-  const message=document.getElementById("message").value;
-  if(message.trim()==="") return;
-
+window.sendMessage = async function(){
+  const text = message.value;
+  if(text==="") return;
   await addDoc(collection(db,"messages"),{
-    text:message,
-    user:allowedUsers[auth.currentUser.email],
-    time:Date.now()
+    text,
+    user: allowedUsers[auth.currentUser.email],
+    time: Date.now()
   });
-
-  document.getElementById("message").value="";
+  message.value="";
 }
 
-window.sendSecret=async function(){
-  const msg=document.getElementById("secretMsg").value;
-  if(msg.trim()==="") return;
-
-  await addDoc(collection(db,"secretMessages"),{
-    text:msg,
-    time:Date.now()
+window.sendSpecial = async function(){
+  const text = specialMessage.value;
+  if(text==="") return;
+  await addDoc(collection(db,"specialMessages"),{
+    text,
+    user: allowedUsers[auth.currentUser.email],
+    time: Date.now()
   });
+  specialMessage.value="";
+}
 
-  document.getElementById("secretMsg").value="";
+function calculateDays(){
+  const start = new Date("2023-11-25");
+  const now = new Date();
+  const diff = Math.floor((now-start)/(1000*60*60*24));
+  loveDays.innerText = "💘 Love Days: " + diff + " Days";
+}
+
+function nextBirthday(){
+  const today = new Date();
+  const bday = new Date(today.getFullYear(),1,19);
+  if(today>bday) bday.setFullYear(today.getFullYear()+1);
+  const diff = Math.ceil((bday-today)/(1000*60*60*24));
+  nextEvent.innerText = "Kumaraswamy Birthday in " + diff + " Days 🎂";
 }
 
 onAuthStateChanged(auth,user=>{
@@ -221,37 +201,40 @@ onAuthStateChanged(auth,user=>{
     loginDiv.style.display="none";
     appDiv.style.display="block";
 
-    document.getElementById("statusText").innerText="🟢 Online";
+    setDoc(doc(db,"users",user.email),{status:"online"});
+
+    calculateDays();
+    nextBirthday();
 
     const q=query(collection(db,"messages"),orderBy("time"));
-    onSnapshot(q,snap=>{
+    onSnapshot(q,snapshot=>{
       chatBox.innerHTML="";
-      snap.forEach(d=>{
-        const m=d.data();
-        chatBox.innerHTML+=`<p><b>${m.user}:</b> ${m.text}</p>`;
+      snapshot.forEach(d=>{
+        chatBox.innerHTML+=`<div class="msg"><b>${d.data().user}:</b> ${d.data().text}</div>`;
       });
     });
 
-    const s=query(collection(db,"secretMessages"),orderBy("time"));
-    onSnapshot(s,snap=>{
-      secretBox.innerHTML="";
-      snap.forEach(d=>{
-        const m=d.data();
-        secretBox.innerHTML+=
-        `<p>${m.text} 
-        <button onclick="deleteSecret('${d.id}')">Clear</button></p>`;
+    const sp=query(collection(db,"specialMessages"),orderBy("time"));
+    onSnapshot(sp,snapshot=>{
+      specialBox.innerHTML="";
+      snapshot.forEach(d=>{
+        specialBox.innerHTML+=`<p>${d.data().user}: ${d.data().text} <button onclick="deleteSpecial('${d.id}')">Read</button></p>`;
       });
+    });
+
+    onSnapshot(doc(db,"users","poojaprasanna089@gmail.com"),docSnap=>{
+      if(docSnap.exists())
+      statusBox.innerText="Pooja is "+docSnap.data().status;
     });
 
   }else{
     loginDiv.style.display="block";
     appDiv.style.display="none";
-    document.getElementById("statusText").innerText="🔴 Offline";
   }
 });
 
-window.deleteSecret=async function(id){
-  await deleteDoc(doc(db,"secretMessages",id));
+window.deleteSpecial = async function(id){
+  await deleteDoc(doc(db,"specialMessages",id));
 }
 
 </script>
