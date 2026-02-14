@@ -1,119 +1,68 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>KP 💖 Private Space</title>
+  <title>NoteSync</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<style>
-body{
-  margin:0;
-  font-family: Arial;
-  background:#0c1222;
-  color:white;
-  text-align:center;
-}
+  <style>
+    body {
+      font-family: Arial;
+      margin: 0;
+      text-align: center;
+      background: linear-gradient(to right, #1f1c2c, #928dab);
+      color: white;
+    }
 
-.container{ padding:20px; }
+    #chatBox {
+      height: 300px;
+      overflow-y: scroll;
+      background: white;
+      color: black;
+      margin: 20px;
+      padding: 10px;
+      border-radius: 10px;
+    }
 
-button{
-  padding:8px 15px;
-  margin:5px;
-  border:none;
-  border-radius:8px;
-  background:#d4af37;
-  cursor:pointer;
-}
+    input, button {
+      padding: 10px;
+      margin: 5px;
+      border-radius: 5px;
+      border: none;
+    }
 
-input{
-  padding:8px;
-  margin:5px;
-  border-radius:8px;
-  border:none;
-}
+    button {
+      background: #6a5acd;
+      color: white;
+      cursor: pointer;
+    }
 
-.section{ display:none; }
-.active{ display:block; }
-
-.card{
-  background:#1a2238;
-  padding:15px;
-  border-radius:12px;
-  margin:10px 0;
-}
-
-#chatBox,#specialBox{
-  background:#111;
-  height:220px;
-  overflow-y:auto;
-  padding:10px;
-  border-radius:10px;
-  text-align:left;
-}
-</style>
+    .dark {
+      background: #111;
+      color: white;
+    }
+  </style>
 </head>
-
 <body>
 
-<div class="container">
+<h2>NoteSync</h2>
 
-<h2>💖 Kumaraswamy ❤️ Pooja 💖</h2>
-
-<!-- LOGIN -->
 <div id="loginDiv">
-  <input type="email" id="emailInput" placeholder="Email"><br>
-  <input type="password" id="passwordInput" placeholder="Password"><br>
-  <button id="loginBtn">Login</button>
+  <button id="loginBtn">Login with Google</button>
 </div>
 
-<!-- APP -->
-<div id="appDiv" style="display:none;">
-
-<div>
-  <button onclick="showSection('home')">Home</button>
-  <button onclick="showSection('chat')">Chat</button>
-  <button onclick="showSection('special')">Special Box</button>
+<div id="chatDiv" style="display:none;">
+  <p id="status"></p>
+  <div id="chatBox"></div>
+  <input type="text" id="messageInput" placeholder="Type message">
+  <button id="sendBtn">Send</button>
+  <button id="darkModeBtn">Dark Mode</button>
   <button id="logoutBtn">Logout</button>
 </div>
 
-<!-- HOME -->
-<div id="home" class="section active">
-
-<div class="card">
-<p id="loveDays"></p>
-</div>
-
-<div class="card">
-<p id="birthdayCounter"></p>
-</div>
-
-<div class="card">
-<p id="onlineStatus"></p>
-</div>
-
-</div>
-
-<!-- CHAT -->
-<div id="chat" class="section">
-<div id="chatBox"></div>
-<input type="text" id="messageInput" placeholder="Type message">
-<button id="sendBtn">Send</button>
-</div>
-
-<!-- SPECIAL -->
-<div id="special" class="section">
-<div id="specialBox"></div>
-<input type="text" id="specialInput" placeholder="Secret message">
-<button id="specialBtn">Send</button>
-</div>
-
-</div>
-</div>
-
 <script type="module">
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDEl579k9r9NxIVss_QtQTNLoa25CGGSbI",
@@ -127,122 +76,78 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth();
 const db = getFirestore();
+const provider = new GoogleAuthProvider();
 
-const allowedUsers = {
-  "kumaraswamyd2005@gmail.com": "Kumaraswamy ❤️",
-  "poojaprasanna089@gmail.com": "Pooja ❤️"
-};
+const allowedUsers = [
+  "kumaraswamyd2005@gmail.com",
+  "poojaprasanna089@gmail.com"
+];
 
-const emailInput = document.getElementById("emailInput");
-const passwordInput = document.getElementById("passwordInput");
 const loginBtn = document.getElementById("loginBtn");
 const logoutBtn = document.getElementById("logoutBtn");
-
+const sendBtn = document.getElementById("sendBtn");
+const messageInput = document.getElementById("messageInput");
+const chatBox = document.getElementById("chatBox");
 const loginDiv = document.getElementById("loginDiv");
-const appDiv = document.getElementById("appDiv");
+const chatDiv = document.getElementById("chatDiv");
+const statusText = document.getElementById("status");
+const darkModeBtn = document.getElementById("darkModeBtn");
 
 loginBtn.onclick = async () => {
-  if(!allowedUsers[emailInput.value]){
-    alert("Not allowed user");
-    return;
-  }
-  await signInWithEmailAndPassword(auth,emailInput.value,passwordInput.value);
-};
-
-logoutBtn.onclick = async () => {
-  if(auth.currentUser){
-    await setDoc(doc(db,"users",auth.currentUser.email),{status:"offline"});
+  const result = await signInWithPopup(auth, provider);
+  if (!allowedUsers.includes(result.user.email)) {
+    alert("Access Denied");
     await signOut(auth);
   }
 };
 
-window.showSection = function(id){
-  document.querySelectorAll(".section").forEach(sec=>sec.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
-};
+logoutBtn.onclick = () => signOut(auth);
 
-document.getElementById("sendBtn").onclick = async () => {
-  const text = document.getElementById("messageInput").value;
-  if(text==="") return;
+sendBtn.onclick = async () => {
+  const message = messageInput.value;
+  if (message.trim() === "") return;
 
-  await addDoc(collection(db,"messages"),{
-    text,
-    user: allowedUsers[auth.currentUser.email],
+  await addDoc(collection(db, "messages"), {
+    text: message,
+    user: auth.currentUser.email,
     time: Date.now()
   });
 
-  document.getElementById("messageInput").value="";
+  messageInput.value = "";
 };
 
-document.getElementById("specialBtn").onclick = async () => {
-  const text = document.getElementById("specialInput").value;
-  if(text==="") return;
-
-  await addDoc(collection(db,"specialMessages"),{
-    text,
-    user: allowedUsers[auth.currentUser.email],
-    time: Date.now()
-  });
-
-  document.getElementById("specialInput").value="";
+darkModeBtn.onclick = () => {
+  document.body.classList.toggle("dark");
 };
 
-function updateLoveDays(){
-  const start = new Date("2023-11-25");
-  const now = new Date();
-  const diff = Math.floor((now-start)/(1000*60*60*24));
-  document.getElementById("loveDays").innerText = "💘 Together for " + diff + " Days";
-}
+onAuthStateChanged(auth, user => {
+  if (user && allowedUsers.includes(user.email)) {
+    loginDiv.style.display = "none";
+    chatDiv.style.display = "block";
+    statusText.innerText = "Online as " + user.email;
 
-function updateBirthday(){
-  const today = new Date();
-  let bday = new Date(today.getFullYear(),1,19);
-  if(today > bday) bday.setFullYear(today.getFullYear()+1);
-  const diff = Math.ceil((bday-today)/(1000*60*60*24));
-  document.getElementById("birthdayCounter").innerText = "🎂 Kumar Birthday in " + diff + " Days";
-}
-
-onAuthStateChanged(auth,user=>{
-  if(user){
-    loginDiv.style.display="none";
-    appDiv.style.display="block";
-
-    setDoc(doc(db,"users",user.email),{status:"online"});
-
-    updateLoveDays();
-    updateBirthday();
-
-    const q = query(collection(db,"messages"),orderBy("time"));
-    onSnapshot(q,snapshot=>{
-      const box = document.getElementById("chatBox");
-      box.innerHTML="";
-      snapshot.forEach(doc=>{
-        const data = doc.data();
-        box.innerHTML += `<p><b>${data.user}:</b> ${data.text}</p>`;
+    const q = query(collection(db, "messages"), orderBy("time"));
+    onSnapshot(q, snapshot => {
+      chatBox.innerHTML = "";
+      snapshot.forEach(d => {
+        const msg = d.data();
+        chatBox.innerHTML += `
+          <p>
+            <b>${msg.user}:</b> ${msg.text}
+            <button onclick="deleteMessage('${d.id}')">❌</button>
+          </p>`;
       });
+      chatBox.scrollTop = chatBox.scrollHeight;
     });
-
-    const sp = query(collection(db,"specialMessages"),orderBy("time"));
-    onSnapshot(sp,snapshot=>{
-      const box = document.getElementById("specialBox");
-      box.innerHTML="";
-      snapshot.forEach(docu=>{
-        const data = docu.data();
-        box.innerHTML += `<p>${data.user}: ${data.text} 
-        <button onclick="deleteSpecial('${docu.id}')">Read</button></p>`;
-      });
-    });
-
-  }else{
-    loginDiv.style.display="block";
-    appDiv.style.display="none";
+  } else {
+    loginDiv.style.display = "block";
+    chatDiv.style.display = "none";
   }
 });
 
-window.deleteSpecial = async function(id){
-  await deleteDoc(doc(db,"specialMessages",id));
+window.deleteMessage = async (id) => {
+  await deleteDoc(doc(db, "messages", id));
 };
-
 </script>
 
 </body>
