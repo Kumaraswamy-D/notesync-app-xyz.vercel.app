@@ -3,62 +3,35 @@
 <head>
   <title>NoteSync</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <style>
     body {
       font-family: Arial;
       margin: 0;
       background: linear-gradient(to right, #ff9a9e, #fad0c4);
       text-align: center;
-      color: #333;
     }
-
-    h2 {
-      margin-top: 15px;
-    }
-
     nav button {
       margin: 5px;
-      padding: 10px 15px;
+      padding: 8px 12px;
       border-radius: 20px;
       border: none;
       background: #ff4d6d;
       color: white;
       cursor: pointer;
     }
-
-    .section {
-      display: none;
-      padding: 10px;
-    }
-
+    .section { display: none; padding: 10px; }
     #chatBox {
       height: 250px;
       overflow-y: scroll;
       background: white;
       padding: 10px;
       border-radius: 10px;
-      margin-bottom: 10px;
     }
-
     input, button {
       padding: 8px;
       margin: 5px;
       border-radius: 8px;
       border: none;
-    }
-
-    .romantic-card {
-      background: white;
-      padding: 10px;
-      margin: 10px;
-      border-radius: 15px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-
-    .dark {
-      background: #111;
-      color: white;
     }
   </style>
 </head>
@@ -67,7 +40,9 @@
 <h2>💖 NoteSync 💖</h2>
 
 <div id="loginDiv">
-  <button id="loginBtn">Login with Google</button>
+  <input type="email" id="email" placeholder="Email"><br>
+  <input type="password" id="password" placeholder="Password"><br>
+  <button id="loginBtn">Login</button>
 </div>
 
 <div id="mainDiv" style="display:none;">
@@ -76,9 +51,10 @@
     <button onclick="showSection('chat')">💬 Chat</button>
     <button onclick="showSection('celebration')">🎉 Celebration</button>
     <button onclick="showSection('dates')">📅 Important Dates</button>
-    <button id="darkBtn">🌙 Dark</button>
     <button id="logoutBtn">Logout</button>
   </nav>
+
+  <h3 id="welcome"></h3>
 
   <!-- CHAT -->
   <div id="chat" class="section">
@@ -89,30 +65,24 @@
 
   <!-- CELEBRATION -->
   <div id="celebration" class="section">
-    <div class="romantic-card">
-      <h3>🎂 Celebration Wall</h3>
-      <input type="text" id="celebrateText" placeholder="Write something special">
-      <button onclick="addCelebration()">Add</button>
-      <div id="celebrationList"></div>
-    </div>
+    <input type="text" id="celebrateText" placeholder="Write something special">
+    <button onclick="addCelebration()">Add</button>
+    <div id="celebrationList"></div>
   </div>
 
-  <!-- IMPORTANT DATES -->
+  <!-- DATES -->
   <div id="dates" class="section">
-    <div class="romantic-card">
-      <h3>📅 Important Dates</h3>
-      <input type="text" id="dateTitle" placeholder="Event Name">
-      <input type="date" id="dateValue">
-      <button onclick="addDate()">Save</button>
-      <div id="dateList"></div>
-    </div>
+    <input type="text" id="dateTitle" placeholder="Event Name">
+    <input type="date" id="dateValue">
+    <button onclick="addDate()">Save</button>
+    <div id="dateList"></div>
   </div>
 
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -127,32 +97,35 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth();
 const db = getFirestore();
-const provider = new GoogleAuthProvider();
 
-const allowedUsers = [
-  "kumaraswamyd2005@gmail.com",
-  "poojaprasanna089@gmail.com"
-];
+const allowedUsers = {
+  "kumaraswamyd2005@gmail.com": "Kumaraswamy 💙",
+  "poojaprasanna089@gmail.com": "Pooja 💖"
+};
 
-const loginBtn = document.getElementById("loginBtn");
-const logoutBtn = document.getElementById("logoutBtn");
-const mainDiv = document.getElementById("mainDiv");
+document.getElementById("loginBtn").onclick = async () => {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
 
-loginBtn.onclick = async () => {
-  const result = await signInWithPopup(auth, provider);
-  if (!allowedUsers.includes(result.user.email)) {
-    alert("Access Denied");
-    await signOut(auth);
+  try {
+    const userCred = await signInWithEmailAndPassword(auth, email, password);
+    if (!allowedUsers[email]) {
+      alert("Access Denied");
+      await signOut(auth);
+    }
+  } catch (err) {
+    alert(err.message);
   }
 };
 
-logoutBtn.onclick = () => signOut(auth);
+document.getElementById("logoutBtn").onclick = () => signOut(auth);
 
 onAuthStateChanged(auth, user => {
-  if (user && allowedUsers.includes(user.email)) {
+  if (user && allowedUsers[user.email]) {
     loginDiv.style.display = "none";
     mainDiv.style.display = "block";
-    showSection('chat');
+    welcome.innerText = "Welcome " + allowedUsers[user.email];
+    showSection("chat");
   } else {
     loginDiv.style.display = "block";
     mainDiv.style.display = "none";
@@ -160,87 +133,64 @@ onAuthStateChanged(auth, user => {
 });
 
 /* CHAT */
-const chatBox = document.getElementById("chatBox");
-const messageInput = document.getElementById("messageInput");
-const sendBtn = document.getElementById("sendBtn");
+document.getElementById("sendBtn").onclick = async () => {
+  const text = messageInput.value;
+  if (text.trim() === "") return;
 
-sendBtn.onclick = async () => {
-  if(messageInput.value.trim() === "") return;
-
-  await addDoc(collection(db, "messages"), {
-    text: messageInput.value,
-    user: auth.currentUser.email,
+  await addDoc(collection(db,"messages"),{
+    text: text,
+    user: allowedUsers[auth.currentUser.email],
     time: Date.now()
   });
 
-  messageInput.value = "";
+  messageInput.value="";
 };
 
-const q = query(collection(db, "messages"), orderBy("time"));
-onSnapshot(q, snapshot => {
-  chatBox.innerHTML = "";
-  snapshot.forEach(doc => {
-    const msg = doc.data();
-    chatBox.innerHTML += `<p><b>${msg.user}:</b> ${msg.text}</p>`;
+const q = query(collection(db,"messages"), orderBy("time"));
+onSnapshot(q, snapshot=>{
+  chatBox.innerHTML="";
+  snapshot.forEach(doc=>{
+    const msg=doc.data();
+    chatBox.innerHTML+=`<p><b>${msg.user}:</b> ${msg.text}</p>`;
   });
-  chatBox.scrollTop = chatBox.scrollHeight;
+  chatBox.scrollTop=chatBox.scrollHeight;
 });
 
 /* CELEBRATION */
-window.addCelebration = async () => {
-  const text = document.getElementById("celebrateText").value;
-  if(text.trim()==="") return;
-
-  await addDoc(collection(db,"celebrations"),{
-    text:text,
-    time:Date.now()
-  });
-
-  document.getElementById("celebrateText").value="";
+window.addCelebration = async ()=>{
+  const text=document.getElementById("celebrateText").value;
+  if(text==="") return;
+  await addDoc(collection(db,"celebrations"),{text});
+  celebrateText.value="";
 };
 
-onSnapshot(collection(db,"celebrations"), snapshot=>{
-  const list=document.getElementById("celebrationList");
-  list.innerHTML="";
-  snapshot.forEach(doc=>{
-    list.innerHTML+=`<p>💖 ${doc.data().text}</p>`;
+onSnapshot(collection(db,"celebrations"), snap=>{
+  celebrationList.innerHTML="";
+  snap.forEach(doc=>{
+    celebrationList.innerHTML+=`<p>💖 ${doc.data().text}</p>`;
   });
 });
 
 /* DATES */
-window.addDate = async () => {
-  const title=document.getElementById("dateTitle").value;
-  const date=document.getElementById("dateValue").value;
+window.addDate = async ()=>{
+  const title=dateTitle.value;
+  const date=dateValue.value;
   if(title===""||date==="") return;
-
-  await addDoc(collection(db,"dates"),{
-    title:title,
-    date:date
-  });
-
-  document.getElementById("dateTitle").value="";
-  document.getElementById("dateValue").value="";
+  await addDoc(collection(db,"dates"),{title,date});
+  dateTitle.value=""; dateValue.value="";
 };
 
-onSnapshot(collection(db,"dates"), snapshot=>{
-  const list=document.getElementById("dateList");
-  list.innerHTML="";
-  snapshot.forEach(doc=>{
-    list.innerHTML+=`<p>📅 ${doc.data().title} - ${doc.data().date}</p>`;
+onSnapshot(collection(db,"dates"), snap=>{
+  dateList.innerHTML="";
+  snap.forEach(doc=>{
+    dateList.innerHTML+=`<p>📅 ${doc.data().title} - ${doc.data().date}</p>`;
   });
 });
 
-/* NAVIGATION */
 window.showSection = function(id){
   document.querySelectorAll(".section").forEach(sec=>sec.style.display="none");
   document.getElementById(id).style.display="block";
 };
-
-/* DARK MODE */
-document.getElementById("darkBtn").onclick=()=>{
-  document.body.classList.toggle("dark");
-};
-
 </script>
 
 </body>
