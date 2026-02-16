@@ -1,253 +1,279 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>NoteSync 💕</title>
+<title>💖 NoteSync Ultimate 💖</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
 body{
-  margin:0;
-  font-family: Arial;
-  background: linear-gradient(135deg,#ff758c,#ff7eb3);
-  color:white;
-  text-align:center;
+margin:0;
+font-family:Arial;
+background:linear-gradient(135deg,#ff6a88,#ff99ac);
+color:white;
+text-align:center;
+overflow-x:hidden;
 }
 
-.container{ padding:15px; }
+.section{display:none;padding:15px;}
 
-input,button{
-  padding:10px;
-  margin:5px;
-  border:none;
-  border-radius:8px;
+.card{
+background:white;
+color:black;
+padding:15px;
+border-radius:20px;
+margin:10px;
 }
-
-button{
-  background:#ff4d6d;
-  color:white;
-  cursor:pointer;
-}
-
-.section{ display:none; }
-.active{ display:block; }
 
 #chatBox{
-  background:white;
-  color:black;
-  height:250px;
-  overflow-y:auto;
-  padding:10px;
-  border-radius:10px;
+height:260px;
+overflow-y:auto;
+background:white;
+color:black;
+border-radius:15px;
+padding:10px;
+text-align:left;
+}
+
+input,button{
+padding:8px;
+margin:5px;
+border-radius:20px;
+border:none;
 }
 
 .bottomNav{
-  position:fixed;
-  bottom:0;
-  width:100%;
-  background:#ff4d6d;
-  display:flex;
-  justify-content:space-around;
-  padding:10px 0;
+position:fixed;
+bottom:0;
+width:100%;
+background:#ff4d6d;
+display:flex;
+justify-content:space-around;
+padding:10px 0;
 }
 
 .bottomNav button{
-  background:none;
-  border:none;
-  color:white;
-  font-size:14px;
+background:none;
+color:white;
+font-size:18px;
 }
 
-.online{
-  color:#00ff99;
-  font-weight:bold;
+.heart{
+position:fixed;
+color:white;
+animation:float 6s linear infinite;
 }
 
-.offline{
-  color:#ffcccc;
+@keyframes float{
+from{transform:translateY(100vh);}
+to{transform:translateY(-10vh);}
+}
+
+.balloon{
+position:fixed;
+bottom:-100px;
+font-size:30px;
+animation:fly 5s linear forwards;
+}
+
+@keyframes fly{
+to{transform:translateY(-800px);}
 }
 </style>
 </head>
-
 <body>
-<div class="container">
 
-<h2>💖 NoteSync 💖</h2>
+<h2>💖 NoteSync Ultimate 💖</h2>
 
 <div id="loginDiv">
 <input type="email" id="email" placeholder="Email"><br>
 <input type="password" id="password" placeholder="Password"><br>
-<button onclick="login()">Login</button>
+<button id="loginBtn">Login</button>
 </div>
 
-<div id="appDiv" style="display:none;">
+<div id="mainDiv" style="display:none;">
 
-<!-- HOME -->
-<div id="home" class="section active">
-<h3 id="welcome"></h3>
+<div id="home" class="section">
+<div class="card">
+<h3>Kumaraswamy 💙 & Pooja 💖</h3>
 <p id="statusText"></p>
 <p id="daysTogether"></p>
-<p id="birthdaySoon"></p>
+<p id="birthdayCountdown"></p>
+<p id="anniCountdown"></p>
+</div>
 </div>
 
-<!-- CHAT -->
 <div id="chat" class="section">
 <div id="chatBox"></div>
-<input type="text" id="message" placeholder="Type message">
-<button onclick="sendMessage()">Send</button>
+<p id="typingText"></p>
+<input type="text" id="messageInput" placeholder="Type message">
+<button id="sendBtn">Send</button>
 </div>
 
-<!-- DATES -->
-<div id="dates" class="section">
-<h3>Important Dates</h3>
-<p>💖 Anniversary: 25-11-2023</p>
-<p>🎂 Pooja Birthday: 19-02-2005</p>
-<p>🎂 Kumar Birthday: 07-12-2004</p>
-</div>
-
-<!-- CELEBRATION -->
 <div id="celebration" class="section">
-<h3>🎉 Celebration 🎉</h3>
 <button onclick="cutCake()">🎂 Cut Cake</button>
-<button onclick="blastBalloon()">🎈 Blast Balloon</button>
-<p id="celebrateStatus"></p>
+<button onclick="balloonBlast()">🎈 Balloon Blast</button>
 </div>
 
 <div class="bottomNav">
-<button onclick="showSection('home')">Home</button>
-<button onclick="showSection('chat')">Chat</button>
-<button onclick="showSection('dates')">Dates</button>
-<button onclick="showSection('celebration')">Celebrate</button>
-<button onclick="logout()">Logout</button>
+<button onclick="showSection('home')">🏠</button>
+<button onclick="showSection('chat')">💬</button>
+<button onclick="showSection('celebration')">🎉</button>
+<button id="logoutBtn">🚪</button>
 </div>
 
-</div>
 </div>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, setDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut }
+from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, setDoc, updateDoc }
+from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
-const firebaseConfig = {
-apiKey: "AIzaSyDEl579k9r9NxIVss_QtQTNLoa25CGGSbI",
-authDomain: "notesync-5e7ed.firebaseapp.com",
-projectId: "notesync-5e7ed",
-storageBucket: "notesync-5e7ed.firebasestorage.app",
-messagingSenderId: "486342879531",
-appId: "1:486342879531:web:76ed522f873d1ecca67d6e"
+const firebaseConfig={
+apiKey:"AIzaSyDEl579k9r9NxIVss_QtQTNLoa25CGGSbI",
+authDomain:"notesync-5e7ed.firebaseapp.com",
+projectId:"notesync-5e7ed",
+storageBucket:"notesync-5e7ed.firebasestorage.app",
+messagingSenderId:"486342879531",
+appId:"1:486342879531:web:76ed522f873d1ecca67d6e"
 };
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth();
-const db = getFirestore();
+const app=initializeApp(firebaseConfig);
+const auth=getAuth();
+const db=getFirestore();
 
-const allowedUsers = {
-"kumaraswamyd2005@gmail.com":"Kumaraswamy ❤️",
-"poojaprasanna089@gmail.com":"Pooja ❤️"
+const allowedUsers={
+"kumaraswamyd2005@gmail.com":"Kumaraswamy 💙",
+"poojaprasanna089@gmail.com":"Pooja 💖"
 };
 
-let soulmateOnline = false;
+loginBtn.onclick=()=>signInWithEmailAndPassword(auth,email.value,password.value);
+logoutBtn.onclick=()=>signOut(auth);
 
-window.login = function(){
-const email=document.getElementById("email").value;
-const password=document.getElementById("password").value;
-
-if(!allowedUsers[email]){
-alert("Not allowed user");
-return;
-}
-
-signInWithEmailAndPassword(auth,email,password)
-.catch(err=>alert(err.message));
-}
-
-window.logout = function(){
-signOut(auth);
-}
-
-window.showSection = function(id){
-document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
-document.getElementById(id).classList.add("active");
-}
-
-window.sendMessage = async function(){
-const message=document.getElementById("message").value;
-if(message==="") return;
-
-await addDoc(collection(db,"messages"),{
-text:message,
-user:allowedUsers[auth.currentUser.email],
-time:Date.now()
-});
-
-document.getElementById("message").value="";
-}
-
-window.cutCake = async function(){
-if(!soulmateOnline){
-alert("Your soulmate must be online ❤️");
-return;
-}
-alert("🎂 Cake Cut Together ❤️");
-}
-
-window.blastBalloon = function(){
-if(!soulmateOnline){
-alert("Your soulmate must be online ❤️");
-return;
-}
-alert("🎈 Balloon Blasted Together ❤️");
-}
-
-function calculateDays(){
-const start=new Date("2023-11-25");
-const now=new Date();
-const diff=Math.floor((now-start)/(1000*60*60*24));
-return diff;
-}
-
-onAuthStateChanged(auth,user=>{
-if(user){
+onAuthStateChanged(auth,async user=>{
+if(user && allowedUsers[user.email]){
 loginDiv.style.display="none";
-appDiv.style.display="block";
+mainDiv.style.display="block";
+showSection("home");
 
-document.getElementById("welcome").innerText=
-"Welcome "+allowedUsers[user.email];
-
-document.getElementById("daysTogether").innerText=
-"You completed "+calculateDays()+" days together ❤️";
-
-setDoc(doc(db,"status",user.email),{
-online:true
+await setDoc(doc(db,"status",user.email),{online:true});
+window.addEventListener("beforeunload",async ()=>{
+await setDoc(doc(db,"status",user.email),{online:false});
 });
-
-onSnapshot(collection(db,"status"),snapshot=>{
-snapshot.forEach(docSnap=>{
-if(docSnap.id!==user.email){
-soulmateOnline=docSnap.data().online;
-document.getElementById("statusText").innerHTML=
-soulmateOnline?
-"<span class='online'>Your Soulmate is Online 💚</span>"
-:"<span class='offline'>Your Soulmate is Offline ❤️</span>";
-}
-});
-});
-
-const q=query(collection(db,"messages"),orderBy("time"));
-onSnapshot(q,snapshot=>{
-chatBox.innerHTML="";
-snapshot.forEach(doc=>{
-let msg=doc.data();
-chatBox.innerHTML+=`<p><b>${msg.user}:</b> ${msg.text}</p>`;
-});
-});
-
 }else{
 loginDiv.style.display="block";
-appDiv.style.display="none";
+mainDiv.style.display="none";
 }
 });
+
+/* ONLINE STATUS */
+onSnapshot(collection(db,"status"),snap=>{
+let onlineCount=0;
+snap.forEach(d=>{ if(d.data().online) onlineCount++; });
+statusText.innerHTML=onlineCount===2
+? "💚 Your soulmate is online"
+: "❤️ Waiting for soulmate...";
+});
+
+/* DAYS TOGETHER */
+const anniversary=new Date("2023-11-25");
+const diff=Math.floor((new Date()-anniversary)/(1000*60*60*24));
+daysTogether.innerText="💖 Days Together: "+diff+" days";
+
+/* BIRTHDAY COUNTDOWN */
+function countdown(target,element){
+let now=new Date();
+let next=new Date(now.getFullYear(),target.getMonth(),target.getDate());
+if(next<now) next.setFullYear(now.getFullYear()+1);
+let days=Math.ceil((next-now)/(1000*60*60*24));
+element.innerText="🎂 Next Birthday in "+days+" days";
+}
+countdown(new Date("2005-02-19"),birthdayCountdown);
+
+/* ANNIVERSARY COUNTDOWN */
+countdown(new Date("2023-11-25"),anniCountdown);
+
+/* CHAT */
+sendBtn.onclick=async()=>{
+if(messageInput.value.trim()=="")return;
+await addDoc(collection(db,"messages"),{
+text:messageInput.value,
+user:allowedUsers[auth.currentUser.email],
+email:auth.currentUser.email,
+time:Date.now(),
+seen:false
+});
+messageInput.value="";
+};
+
+const q=query(collection(db,"messages"),orderBy("time"));
+onSnapshot(q,snap=>{
+chatBox.innerHTML="";
+snap.forEach(d=>{
+const msg=d.data();
+const id=d.id;
+chatBox.innerHTML+=`
+<p>
+<b>${msg.user}:</b> ${msg.text}
+${msg.email===auth.currentUser.email?(msg.seen?"✔✔":"✔"):""}
+${msg.email===auth.currentUser.email?`<button onclick="deleteMsg('${id}')">🗑</button>`:""}
+</p>`;
+if(msg.email!==auth.currentUser.email && !msg.seen){
+updateDoc(doc(db,"messages",id),{seen:true});
+}
+});
+chatBox.scrollTop=chatBox.scrollHeight;
+});
+
+window.deleteMsg=id=>deleteDoc(doc(db,"messages",id));
+
+/* TYPING */
+messageInput.oninput=()=>setDoc(doc(db,"typing","status"),{user:auth.currentUser.email});
+onSnapshot(doc(db,"typing","status"),docSnap=>{
+if(docSnap.exists()){
+typingText.innerText=
+docSnap.data().user!==auth.currentUser.email
+? "💬 Your soulmate is typing..."
+: "";
+}
+});
+
+/* CELEBRATION */
+window.cutCake=()=>{
+if(statusText.innerText.includes("online"))
+alert("🎂 Cake Cut Together 💖");
+else alert("Both must be online!");
+};
+
+window.balloonBlast=()=>{
+if(statusText.innerText.includes("online")){
+for(let i=0;i<10;i++){
+let b=document.createElement("div");
+b.className="balloon";
+b.innerText="🎈";
+b.style.left=Math.random()*100+"%";
+document.body.appendChild(b);
+setTimeout(()=>b.remove(),5000);
+}
+}else alert("Both must be online!");
+};
+
+/* FLOATING HEARTS */
+setInterval(()=>{
+let h=document.createElement("div");
+h.className="heart";
+h.innerText="💖";
+h.style.left=Math.random()*100+"%";
+document.body.appendChild(h);
+setTimeout(()=>h.remove(),6000);
+},800);
+
+window.showSection=id=>{
+document.querySelectorAll(".section").forEach(s=>s.style.display="none");
+document.getElementById(id).style.display="block";
+};
 
 </script>
 </body>
