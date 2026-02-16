@@ -1,278 +1,305 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>💖 NoteSync Ultimate 💖</title>
+<meta charset="UTF-8">
+<title>NoteSync 💖</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
 body{
-margin:0;
-font-family:Arial;
-background:linear-gradient(135deg,#ff6a88,#ff99ac);
-color:white;
-text-align:center;
-overflow-x:hidden;
+  margin:0;
+  font-family: Arial;
+  background: linear-gradient(135deg,#ff758c,#ff7eb3);
+  color:white;
+  text-align:center;
 }
 
-.section{display:none;padding:15px;}
+.section{ display:none; padding:15px; }
+.active{ display:block; }
 
 .card{
-background:white;
-color:black;
-padding:15px;
-border-radius:20px;
-margin:10px;
-}
-
-#chatBox{
-height:260px;
-overflow-y:auto;
-background:white;
-color:black;
-border-radius:15px;
-padding:10px;
-text-align:left;
+  background:white;
+  color:black;
+  padding:15px;
+  margin:10px;
+  border-radius:15px;
+  box-shadow:0 5px 15px rgba(0,0,0,0.2);
 }
 
 input,button{
-padding:8px;
-margin:5px;
-border-radius:20px;
-border:none;
+  padding:8px;
+  margin:5px;
+  border-radius:8px;
+  border:none;
+}
+
+button{
+  background:#ff4d6d;
+  color:white;
+  cursor:pointer;
+}
+
+#chatBox{
+  height:250px;
+  overflow-y:auto;
+  background:white;
+  color:black;
+  padding:10px;
+  border-radius:10px;
 }
 
 .bottomNav{
-position:fixed;
-bottom:0;
-width:100%;
-background:#ff4d6d;
-display:flex;
-justify-content:space-around;
-padding:10px 0;
+  position:fixed;
+  bottom:0;
+  width:100%;
+  background:#ff4d6d;
+  padding:10px;
+  display:flex;
+  justify-content:space-around;
 }
-
 .bottomNav button{
-background:none;
-color:white;
-font-size:18px;
-}
-
-.heart{
-position:fixed;
-color:white;
-animation:float 6s linear infinite;
-}
-
-@keyframes float{
-from{transform:translateY(100vh);}
-to{transform:translateY(-10vh);}
-}
-
-.balloon{
-position:fixed;
-bottom:-100px;
-font-size:30px;
-animation:fly 5s linear forwards;
-}
-
-@keyframes fly{
-to{transform:translateY(-800px);}
+  background:white;
+  color:#ff4d6d;
+  font-weight:bold;
 }
 </style>
 </head>
 <body>
 
-<h2>💖 NoteSync Ultimate 💖</h2>
+<h2>💖 NoteSync 💖</h2>
 
 <div id="loginDiv">
-<input type="email" id="email" placeholder="Email"><br>
-<input type="password" id="password" placeholder="Password"><br>
-<button id="loginBtn">Login</button>
+  <input type="email" id="email" placeholder="Email"><br>
+  <input type="password" id="password" placeholder="Password"><br>
+  <button id="loginBtn">Login</button>
 </div>
 
-<div id="mainDiv" style="display:none;">
+<div id="mainDiv" style="display:none; padding-bottom:70px;">
 
-<div id="home" class="section">
-<div class="card">
-<h3>Kumaraswamy 💙 & Pooja 💖</h3>
-<p id="statusText"></p>
-<p id="daysTogether"></p>
-<p id="birthdayCountdown"></p>
-<p id="anniCountdown"></p>
-</div>
+<!-- HOME -->
+<div id="home" class="section active">
+  <div class="card">
+    <h2 id="coupleNames"></h2>
+    <p id="soulStatus"></p>
+  </div>
+
+  <div class="card">
+    <h3>🎂 Birthdays</h3>
+    <p id="birthdayCountdown"></p>
+  </div>
+
+  <div class="card">
+    <h3>💍 Anniversary</h3>
+    <p id="anniCountdown"></p>
+  </div>
+
+  <div class="card">
+    <h3>💞 Days Together</h3>
+    <p id="daysTogether"></p>
+  </div>
 </div>
 
+<!-- CHAT -->
 <div id="chat" class="section">
-<div id="chatBox"></div>
-<p id="typingText"></p>
-<input type="text" id="messageInput" placeholder="Type message">
-<button id="sendBtn">Send</button>
+  <div id="chatBox"></div>
+  <input type="text" id="messageInput" placeholder="Type message">
+  <button id="sendBtn">Send</button>
 </div>
 
+<!-- IMPORTANT DATES -->
+<div id="dates" class="section">
+  <div class="card">
+    <input type="text" id="eventTitle" placeholder="Event Name">
+    <input type="date" id="eventDate">
+    <button onclick="addEvent()">Add</button>
+    <div id="eventList"></div>
+  </div>
+</div>
+
+<!-- CELEBRATION -->
 <div id="celebration" class="section">
-<button onclick="cutCake()">🎂 Cut Cake</button>
-<button onclick="balloonBlast()">🎈 Balloon Blast</button>
+  <div class="card">
+    <h3>🎉 Celebration</h3>
+    <button onclick="celebrate()">Cut Cake 🎂</button>
+    <p id="celebrateMsg"></p>
+  </div>
 </div>
 
-<div class="bottomNav">
+<!-- SECRET BOX -->
+<div id="secret" class="section">
+  <div class="card">
+    <input type="text" id="secretText" placeholder="Write special message">
+    <button onclick="addSecret()">Save</button>
+    <div id="secretList"></div>
+  </div>
+</div>
+
+</div>
+
+<div class="bottomNav" id="navBar" style="display:none;">
 <button onclick="showSection('home')">🏠</button>
 <button onclick="showSection('chat')">💬</button>
+<button onclick="showSection('dates')">📅</button>
 <button onclick="showSection('celebration')">🎉</button>
+<button onclick="showSection('secret')">💌</button>
 <button id="logoutBtn">🚪</button>
-</div>
-
 </div>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut }
-from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, setDoc, updateDoc }
-from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
-const firebaseConfig={
-apiKey:"AIzaSyDEl579k9r9NxIVss_QtQTNLoa25CGGSbI",
-authDomain:"notesync-5e7ed.firebaseapp.com",
-projectId:"notesync-5e7ed",
-storageBucket:"notesync-5e7ed.firebasestorage.app",
-messagingSenderId:"486342879531",
-appId:"1:486342879531:web:76ed522f873d1ecca67d6e"
+const firebaseConfig = {
+  apiKey: "AIzaSyDEl579k9r9NxIVss_QtQTNLoa25CGGSbI",
+  authDomain: "notesync-5e7ed.firebaseapp.com",
+  projectId: "notesync-5e7ed",
+  storageBucket: "notesync-5e7ed.firebasestorage.app",
+  messagingSenderId: "486342879531",
+  appId: "1:486342879531:web:76ed522f873d1ecca67d6e"
 };
 
-const app=initializeApp(firebaseConfig);
-const auth=getAuth();
-const db=getFirestore();
+const app = initializeApp(firebaseConfig);
+const auth = getAuth();
+const db = getFirestore();
 
 const allowedUsers={
-"kumaraswamyd2005@gmail.com":"Kumaraswamy 💙",
-"poojaprasanna089@gmail.com":"Pooja 💖"
+  "kumaraswamyd2005@gmail.com":"Kumaraswamy 💙",
+  "poojaprasanna089@gmail.com":"Pooja 💖"
 };
 
-loginBtn.onclick=()=>signInWithEmailAndPassword(auth,email.value,password.value);
+/* LOGIN */
+loginBtn.onclick=async()=>{
+  try{
+    await signInWithEmailAndPassword(auth,email.value,password.value);
+  }catch(e){ alert(e.message); }
+};
+
 logoutBtn.onclick=()=>signOut(auth);
 
-onAuthStateChanged(auth,async user=>{
-if(user && allowedUsers[user.email]){
-loginDiv.style.display="none";
-mainDiv.style.display="block";
-showSection("home");
+/* AUTH STATE */
+onAuthStateChanged(auth,user=>{
+  if(user && allowedUsers[user.email]){
+    loginDiv.style.display="none";
+    mainDiv.style.display="block";
+    navBar.style.display="flex";
+    coupleNames.innerHTML="💙 Kumaraswamy ❤️ Pooja 💖";
+    updateDashboard();
 
-await setDoc(doc(db,"status",user.email),{online:true});
-window.addEventListener("beforeunload",async ()=>{
-await setDoc(doc(db,"status",user.email),{online:false});
-});
-}else{
-loginDiv.style.display="block";
-mainDiv.style.display="none";
-}
+    setDoc(doc(db,"status",user.uid),{online:true,email:user.email});
+
+    onSnapshot(collection(db,"status"),snap=>{
+      let online=false;
+      snap.forEach(d=>{
+        if(d.data().email!==user.email && d.data().online) online=true;
+      });
+      soulStatus.innerHTML=online?
+      "🟢 Your soulmate is Online 💖":
+      "🔴 Your soulmate is Offline";
+    });
+
+  }else{
+    loginDiv.style.display="block";
+    mainDiv.style.display="none";
+    navBar.style.display="none";
+  }
 });
 
-/* ONLINE STATUS */
-onSnapshot(collection(db,"status"),snap=>{
-let onlineCount=0;
-snap.forEach(d=>{ if(d.data().online) onlineCount++; });
-statusText.innerHTML=onlineCount===2
-? "💚 Your soulmate is online"
-: "❤️ Waiting for soulmate...";
-});
-
-/* DAYS TOGETHER */
+/* DASHBOARD */
+const myBirthday=new Date("2005-02-19");
+const herBirthday=new Date("2004-12-07");
 const anniversary=new Date("2023-11-25");
-const diff=Math.floor((new Date()-anniversary)/(1000*60*60*24));
-daysTogether.innerText="💖 Days Together: "+diff+" days";
 
-/* BIRTHDAY COUNTDOWN */
-function countdown(target,element){
-let now=new Date();
-let next=new Date(now.getFullYear(),target.getMonth(),target.getDate());
-if(next<now) next.setFullYear(now.getFullYear()+1);
-let days=Math.ceil((next-now)/(1000*60*60*24));
-element.innerText="🎂 Next Birthday in "+days+" days";
+function countdown(date){
+  let now=new Date();
+  let next=new Date(now.getFullYear(),date.getMonth(),date.getDate());
+  if(next<now) next.setFullYear(now.getFullYear()+1);
+  return Math.ceil((next-now)/(1000*60*60*24));
 }
-countdown(new Date("2005-02-19"),birthdayCountdown);
 
-/* ANNIVERSARY COUNTDOWN */
-countdown(new Date("2023-11-25"),anniCountdown);
+function updateDashboard(){
+  birthdayCountdown.innerHTML=
+  `Kumaraswamy: ${countdown(myBirthday)} days <br>
+   Pooja: ${countdown(herBirthday)} days`;
+
+  anniCountdown.innerHTML=`${countdown(anniversary)} days left`;
+
+  let days=Math.floor((new Date()-anniversary)/(1000*60*60*24));
+  daysTogether.innerHTML=`${days} days`;
+}
 
 /* CHAT */
 sendBtn.onclick=async()=>{
-if(messageInput.value.trim()=="")return;
-await addDoc(collection(db,"messages"),{
-text:messageInput.value,
-user:allowedUsers[auth.currentUser.email],
-email:auth.currentUser.email,
-time:Date.now(),
-seen:false
-});
-messageInput.value="";
+  if(messageInput.value==="") return;
+  await addDoc(collection(db,"messages"),{
+    text:messageInput.value,
+    user:allowedUsers[auth.currentUser.email],
+    email:auth.currentUser.email,
+    time:Date.now()
+  });
+  messageInput.value="";
 };
 
-const q=query(collection(db,"messages"),orderBy("time"));
-onSnapshot(q,snap=>{
-chatBox.innerHTML="";
-snap.forEach(d=>{
-const msg=d.data();
-const id=d.id;
-chatBox.innerHTML+=`
-<p>
-<b>${msg.user}:</b> ${msg.text}
-${msg.email===auth.currentUser.email?(msg.seen?"✔✔":"✔"):""}
-${msg.email===auth.currentUser.email?`<button onclick="deleteMsg('${id}')">🗑</button>`:""}
-</p>`;
-if(msg.email!==auth.currentUser.email && !msg.seen){
-updateDoc(doc(db,"messages",id),{seen:true});
-}
-});
-chatBox.scrollTop=chatBox.scrollHeight;
+onSnapshot(query(collection(db,"messages"),orderBy("time")),snap=>{
+  chatBox.innerHTML="";
+  snap.forEach(d=>{
+    let m=d.data();
+    chatBox.innerHTML+=`
+    <p>
+    <b>${m.user}:</b> ${m.text}
+    ${m.email===auth.currentUser.email?
+    `<button onclick="deleteMessage('${d.id}')">🗑</button>`:""}
+    </p>`;
+  });
 });
 
-window.deleteMsg=id=>deleteDoc(doc(db,"messages",id));
+window.deleteMessage=id=>deleteDoc(doc(db,"messages",id));
 
-/* TYPING */
-messageInput.oninput=()=>setDoc(doc(db,"typing","status"),{user:auth.currentUser.email});
-onSnapshot(doc(db,"typing","status"),docSnap=>{
-if(docSnap.exists()){
-typingText.innerText=
-docSnap.data().user!==auth.currentUser.email
-? "💬 Your soulmate is typing..."
-: "";
-}
+/* IMPORTANT DATES */
+window.addEvent=async()=>{
+  if(eventTitle.value===""||eventDate.value==="") return;
+  await addDoc(collection(db,"dates"),{
+    title:eventTitle.value,
+    date:eventDate.value
+  });
+  eventTitle.value=""; eventDate.value="";
+};
+
+onSnapshot(collection(db,"dates"),snap=>{
+  eventList.innerHTML="";
+  snap.forEach(d=>{
+    eventList.innerHTML+=`
+    <p>${d.data().title} - ${d.data().date}
+    <button onclick="deleteDoc(doc(db,'dates','${d.id}'))">🗑</button>
+    </p>`;
+  });
+});
+
+/* SECRET BOX */
+window.addSecret=async()=>{
+  if(secretText.value==="") return;
+  await addDoc(collection(db,"secret"),{
+    text:secretText.value
+  });
+  secretText.value="";
+};
+
+onSnapshot(collection(db,"secret"),snap=>{
+  secretList.innerHTML="";
+  snap.forEach(d=>{
+    secretList.innerHTML+=`<p>💌 ${d.data().text}</p>`;
+  });
 });
 
 /* CELEBRATION */
-window.cutCake=()=>{
-if(statusText.innerText.includes("online"))
-alert("🎂 Cake Cut Together 💖");
-else alert("Both must be online!");
+window.celebrate=()=>{
+  celebrateMsg.innerHTML="🎂 Cake Cut! 🎉 Love Forever 💖";
 };
-
-window.balloonBlast=()=>{
-if(statusText.innerText.includes("online")){
-for(let i=0;i<10;i++){
-let b=document.createElement("div");
-b.className="balloon";
-b.innerText="🎈";
-b.style.left=Math.random()*100+"%";
-document.body.appendChild(b);
-setTimeout(()=>b.remove(),5000);
-}
-}else alert("Both must be online!");
-};
-
-/* FLOATING HEARTS */
-setInterval(()=>{
-let h=document.createElement("div");
-h.className="heart";
-h.innerText="💖";
-h.style.left=Math.random()*100+"%";
-document.body.appendChild(h);
-setTimeout(()=>h.remove(),6000);
-},800);
 
 window.showSection=id=>{
-document.querySelectorAll(".section").forEach(s=>s.style.display="none");
-document.getElementById(id).style.display="block";
+  document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
 };
 
 </script>
