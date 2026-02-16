@@ -1,111 +1,127 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>NoteSync 💕</title>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NoteSync 💖</title>
 
 <style>
 body{
   margin:0;
   font-family: Arial;
   background: linear-gradient(135deg,#ff758c,#ff7eb3);
-  color:white;
   text-align:center;
-}
-
-.card{
-  background:white;
-  color:black;
-  margin:15px;
-  padding:15px;
-  border-radius:15px;
-}
-
-button{
-  padding:8px 12px;
-  border:none;
-  border-radius:20px;
-  background:#ff4d6d;
   color:white;
-  cursor:pointer;
-  margin:5px;
 }
 
-input{
-  padding:8px;
+.container{ padding:20px; }
+
+input,button,select{
+  padding:10px;
   margin:5px;
   border-radius:8px;
   border:none;
 }
 
+button{
+  background:#ff4d6d;
+  color:white;
+  cursor:pointer;
+}
+
+nav button{
+  margin:5px;
+}
+
 .section{ display:none; }
-.active{ display:block; }
 
 #chatBox{
-  height:200px;
+  height:250px;
   overflow-y:auto;
-  text-align:left;
-}
-.online{
-  color:green;
-  font-weight:bold;
-}
-.offline{
-  color:red;
-  font-weight:bold;
+  background:white;
+  color:black;
+  padding:10px;
+  border-radius:10px;
 }
 </style>
 </head>
+
 <body>
+
+<div class="container">
 
 <h2>💖 NoteSync 💖</h2>
 
+<!-- LOGIN -->
 <div id="loginDiv">
   <input type="email" id="email" placeholder="Email"><br>
   <input type="password" id="password" placeholder="Password"><br>
   <button onclick="login()">Login</button>
 </div>
 
+<!-- MAIN -->
 <div id="mainDiv" style="display:none;">
 
-  <h3 id="coupleTitle"></h3>
-  <p id="onlineStatus"></p>
-  <p id="nextEvent"></p>
+  <h3 id="welcome"></h3>
 
-  <div>
+  <!-- STATUS -->
+  <select id="myStatus">
+    <option value="Online 🟢">Online 🟢</option>
+    <option value="In Class 📚">In Class 📚</option>
+    <option value="Sleeping 💤">Sleeping 💤</option>
+    <option value="Busy 🚗">Busy 🚗</option>
+    <option value="Thinking of you 💕">Thinking of you 💕</option>
+  </select>
+
+  <h3 id="soulmateStatus"></h3>
+
+  <nav>
     <button onclick="showSection('chat')">💬 Chat</button>
     <button onclick="showSection('celebration')">🎉 Celebration</button>
     <button onclick="showSection('dates')">📅 Dates</button>
     <button onclick="logout()">Logout</button>
-  </div>
+  </nav>
 
   <!-- CHAT -->
-  <div id="chat" class="section active card">
+  <div id="chat" class="section">
     <div id="chatBox"></div>
     <input type="text" id="messageInput" placeholder="Type message">
     <button onclick="sendMessage()">Send</button>
   </div>
 
   <!-- CELEBRATION -->
-  <div id="celebration" class="section card">
-    <input type="text" id="celebrateText" placeholder="Write special message">
+  <div id="celebration" class="section">
+    <input type="text" id="celebrateText" placeholder="Write something special">
     <button onclick="addCelebration()">Add</button>
     <div id="celebrationList"></div>
   </div>
 
   <!-- DATES -->
-  <div id="dates" class="section card">
-    <p>🎂 Kumar Birthday: 19-02-2005</p>
-    <p>🎂 Pooja Birthday: 07-12-2004</p>
-    <p>💖 Anniversary: 25-11-2023</p>
+  <div id="dates" class="section">
+    <input type="text" id="dateTitle" placeholder="Event Name">
+    <input type="date" id="dateValue">
+    <button onclick="addDate()">Save</button>
+    <div id="dateList"></div>
   </div>
 
 </div>
+</div>
 
 <script type="module">
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, setDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } 
+from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+import { 
+  getFirestore, 
+  collection, 
+  addDoc, 
+  onSnapshot, 
+  query, 
+  orderBy,
+  doc,
+  setDoc
+} from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDEl579k9r9NxIVss_QtQTNLoa25CGGSbI",
@@ -120,79 +136,52 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth();
 const db = getFirestore();
 
+// Allowed Users
 const allowedUsers = {
-  "kumaraswamyd2005@gmail.com": "Kumaraswamy ❤️",
-  "poojaprasanna089@gmail.com": "Pooja ❤️"
+  "kumaraswamyd2005@gmail.com": "Kumaraswamy 💙",
+  "poojaprasanna089@gmail.com": "Pooja 💖"
 };
 
+// LOGIN
 window.login = async function(){
-  const email=email.value;
-  const password=password.value;
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
 
   if(!allowedUsers[email]){
-    alert("Not Allowed User");
+    alert("Access Denied ❌");
     return;
   }
 
   try{
     await signInWithEmailAndPassword(auth,email,password);
-  }catch(e){ alert(e.message); }
+  }catch(e){
+    alert("Wrong Email or Password ❌");
+  }
 }
 
-window.logout=function(){
+// LOGOUT
+window.logout = function(){
   signOut(auth);
 }
 
-onAuthStateChanged(auth, async user=>{
-  if(user){
+// AUTH STATE
+onAuthStateChanged(auth,user=>{
+  if(user && allowedUsers[user.email]){
     loginDiv.style.display="none";
     mainDiv.style.display="block";
-
-    coupleTitle.innerText="Kumaraswamy ❤️ Pooja";
-
-    // ONLINE STATUS UPDATE
-    await setDoc(doc(db,"status",user.email),{
-      online:true
-    });
-
-    listenOnlineStatus(user.email);
-
+    welcome.innerText="Welcome "+allowedUsers[user.email];
+    showSection("chat");
+    listenSoulmateStatus(user.email);
   }else{
     loginDiv.style.display="block";
     mainDiv.style.display="none";
   }
 });
 
-function listenOnlineStatus(currentEmail){
-  const partner = currentEmail==="kumaraswamyd2005@gmail.com"
-    ? "poojaprasanna089@gmail.com"
-    : "kumaraswamyd2005@gmail.com";
-
-  onSnapshot(doc(db,"status",partner),docSnap=>{
-    if(docSnap.exists() && docSnap.data().online){
-      onlineStatus.innerHTML="🟢 Your soulmate is online 💚";
-      onlineStatus.className="online";
-    }else{
-      onlineStatus.innerHTML="🔴 Your soulmate is offline";
-      onlineStatus.className="offline";
-    }
-  });
-}
-
-// REAL TIME CHAT
-const q=query(collection(db,"messages"),orderBy("time"));
-onSnapshot(q,snap=>{
-  chatBox.innerHTML="";
-  snap.forEach(d=>{
-    const msg=d.data();
-    chatBox.innerHTML+=`<p><b>${msg.user}:</b> ${msg.text}</p>`;
-  });
-  chatBox.scrollTop=chatBox.scrollHeight;
-});
-
-window.sendMessage=async function(){
-  const text=messageInput.value;
-  if(text.trim()==="") return;
+// CHAT
+window.sendMessage = async function(){
+  const text = messageInput.value;
+  if(text==="") return;
 
   await addDoc(collection(db,"messages"),{
     text:text,
@@ -201,27 +190,77 @@ window.sendMessage=async function(){
   });
 
   messageInput.value="";
-}
+};
+
+const q = query(collection(db,"messages"),orderBy("time"));
+onSnapshot(q,snap=>{
+  chatBox.innerHTML="";
+  snap.forEach(doc=>{
+    const msg=doc.data();
+    chatBox.innerHTML+=`<p><b>${msg.user}:</b> ${msg.text}</p>`;
+  });
+  chatBox.scrollTop=chatBox.scrollHeight;
+});
 
 // CELEBRATION
-window.addCelebration=async function(){
-  const text=celebrateText.value;
+window.addCelebration = async function(){
+  const text = celebrateText.value;
   if(text==="") return;
   await addDoc(collection(db,"celebrations"),{text});
   celebrateText.value="";
-}
+};
 
 onSnapshot(collection(db,"celebrations"),snap=>{
   celebrationList.innerHTML="";
-  snap.forEach(d=>{
-    celebrationList.innerHTML+=`<p>💖 ${d.data().text}</p>`;
+  snap.forEach(doc=>{
+    celebrationList.innerHTML+=`<p>💖 ${doc.data().text}</p>`;
   });
 });
 
-window.showSection=function(id){
-  document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
+// DATES
+window.addDate = async function(){
+  const title=dateTitle.value;
+  const date=dateValue.value;
+  if(title===""||date==="") return;
+  await addDoc(collection(db,"dates"),{title,date});
+  dateTitle.value=""; dateValue.value="";
+};
+
+onSnapshot(collection(db,"dates"),snap=>{
+  dateList.innerHTML="";
+  snap.forEach(doc=>{
+    dateList.innerHTML+=`<p>📅 ${doc.data().title} - ${doc.data().date}</p>`;
+  });
+});
+
+// STATUS
+document.getElementById("myStatus").addEventListener("change",async()=>{
+  await setDoc(doc(db,"status",auth.currentUser.email),{
+    state:myStatus.value
+  });
+});
+
+function listenSoulmateStatus(myEmail){
+  const soulmateEmail =
+    myEmail==="kumaraswamyd2005@gmail.com"
+    ?"poojaprasanna089@gmail.com"
+    :"kumaraswamyd2005@gmail.com";
+
+  onSnapshot(doc(db,"status",soulmateEmail),(snap)=>{
+    if(snap.exists()){
+      soulmateStatus.innerText="💖 Your soulmate is: "+snap.data().state;
+    }else{
+      soulmateStatus.innerText="💔 No status";
+    }
+  });
 }
+
+// SECTION SWITCH
+window.showSection=function(id){
+  document.querySelectorAll(".section").forEach(sec=>sec.style.display="none");
+  document.getElementById(id).style.display="block";
+};
+
 </script>
 </body>
 </html>
