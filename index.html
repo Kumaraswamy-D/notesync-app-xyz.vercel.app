@@ -43,6 +43,15 @@ nav button{
   padding:10px;
   border-radius:10px;
 }
+
+/* Romantic Dashboard Card */
+#dashboardCard{
+  background: rgba(255,255,255,0.2);
+  padding:15px;
+  border-radius:15px;
+  margin-bottom:15px;
+  backdrop-filter: blur(10px);
+}
 </style>
 </head>
 
@@ -62,9 +71,14 @@ nav button{
 <!-- MAIN -->
 <div id="mainDiv" style="display:none;">
 
-  <h3 id="welcome"></h3>
+  <!-- Romantic Dashboard -->
+  <div id="dashboardCard">
+    <h3 id="welcome"></h3>
+    <h4>Kumaraswamy 💙 & Pooja 💖</h4>
+    <p id="countdownText"></p>
+    <p>💍 Together Since: 25-11-2023</p>
+  </div>
 
-  <!-- STATUS -->
   <select id="myStatus">
     <option value="Online 🟢">Online 🟢</option>
     <option value="In Class 📚">In Class 📚</option>
@@ -136,13 +150,11 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth();
 const db = getFirestore();
 
-// Allowed Users
 const allowedUsers = {
   "kumaraswamyd2005@gmail.com": "Kumaraswamy 💙",
   "poojaprasanna089@gmail.com": "Pooja 💖"
 };
 
-// LOGIN
 window.login = async function(){
   const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value.trim();
@@ -159,12 +171,8 @@ window.login = async function(){
   }
 }
 
-// LOGOUT
-window.logout = function(){
-  signOut(auth);
-}
+window.logout = function(){ signOut(auth); }
 
-// AUTH STATE
 onAuthStateChanged(auth,user=>{
   if(user && allowedUsers[user.email]){
     loginDiv.style.display="none";
@@ -172,13 +180,13 @@ onAuthStateChanged(auth,user=>{
     welcome.innerText="Welcome "+allowedUsers[user.email];
     showSection("chat");
     listenSoulmateStatus(user.email);
+    updateCountdown();
   }else{
     loginDiv.style.display="block";
     mainDiv.style.display="none";
   }
 });
 
-// CHAT
 window.sendMessage = async function(){
   const text = messageInput.value;
   if(text==="") return;
@@ -202,60 +210,44 @@ onSnapshot(q,snap=>{
   chatBox.scrollTop=chatBox.scrollHeight;
 });
 
-// CELEBRATION
-window.addCelebration = async function(){
-  const text = celebrateText.value;
-  if(text==="") return;
-  await addDoc(collection(db,"celebrations"),{text});
-  celebrateText.value="";
-};
+// Birthday Countdown
+function updateCountdown(){
+  const today = new Date();
+  const kumarBD = new Date(today.getFullYear(),1,19);
+  const poojaBD = new Date(today.getFullYear(),11,7);
 
-onSnapshot(collection(db,"celebrations"),snap=>{
-  celebrationList.innerHTML="";
-  snap.forEach(doc=>{
-    celebrationList.innerHTML+=`<p>💖 ${doc.data().text}</p>`;
+  if(today>kumarBD) kumarBD.setFullYear(today.getFullYear()+1);
+  if(today>poojaBD) poojaBD.setFullYear(today.getFullYear()+1);
+
+  const nextBD = kumarBD<poojaBD ? kumarBD : poojaBD;
+  const name = kumarBD<poojaBD ? "Kumaraswamy" : "Pooja";
+
+  const diff = nextBD - today;
+  const days = Math.ceil(diff/(1000*60*60*24));
+
+  countdownText.innerText =
+  "🎂 Next Birthday: "+name+" in "+days+" days 💕";
+}
+
+function listenSoulmateStatus(myEmail){
+  const soulmateEmail =
+  myEmail==="kumaraswamyd2005@gmail.com"
+  ?"poojaprasanna089@gmail.com"
+  :"kumaraswamyd2005@gmail.com";
+
+  onSnapshot(doc(db,"status",soulmateEmail),(snap)=>{
+    if(snap.exists()){
+      soulmateStatus.innerText="💖 Your soulmate is: "+snap.data().state;
+    }
   });
-});
+}
 
-// DATES
-window.addDate = async function(){
-  const title=dateTitle.value;
-  const date=dateValue.value;
-  if(title===""||date==="") return;
-  await addDoc(collection(db,"dates"),{title,date});
-  dateTitle.value=""; dateValue.value="";
-};
-
-onSnapshot(collection(db,"dates"),snap=>{
-  dateList.innerHTML="";
-  snap.forEach(doc=>{
-    dateList.innerHTML+=`<p>📅 ${doc.data().title} - ${doc.data().date}</p>`;
-  });
-});
-
-// STATUS
 document.getElementById("myStatus").addEventListener("change",async()=>{
   await setDoc(doc(db,"status",auth.currentUser.email),{
     state:myStatus.value
   });
 });
 
-function listenSoulmateStatus(myEmail){
-  const soulmateEmail =
-    myEmail==="kumaraswamyd2005@gmail.com"
-    ?"poojaprasanna089@gmail.com"
-    :"kumaraswamyd2005@gmail.com";
-
-  onSnapshot(doc(db,"status",soulmateEmail),(snap)=>{
-    if(snap.exists()){
-      soulmateStatus.innerText="💖 Your soulmate is: "+snap.data().state;
-    }else{
-      soulmateStatus.innerText="💔 No status";
-    }
-  });
-}
-
-// SECTION SWITCH
 window.showSection=function(id){
   document.querySelectorAll(".section").forEach(sec=>sec.style.display="none");
   document.getElementById(id).style.display="block";
