@@ -10,11 +10,14 @@ body{
   margin:0;
   font-family: Arial;
   background: linear-gradient(135deg,#ff758c,#ff7eb3);
-  text-align:center;
   color:white;
 }
 
-.container{ padding:20px; }
+.container{
+  padding:20px;
+  padding-bottom:80px;
+  text-align:center;
+}
 
 input,button,select{
   padding:10px;
@@ -29,10 +32,6 @@ button{
   cursor:pointer;
 }
 
-nav button{
-  margin:5px;
-}
-
 .section{ display:none; }
 
 #chatBox{
@@ -44,13 +43,30 @@ nav button{
   border-radius:10px;
 }
 
-/* Romantic Dashboard Card */
 #dashboardCard{
   background: rgba(255,255,255,0.2);
   padding:15px;
   border-radius:15px;
-  margin-bottom:15px;
   backdrop-filter: blur(10px);
+}
+
+/* Bottom Navigation */
+.bottomNav{
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  background:#ff4d6d;
+  display:flex;
+  justify-content:space-around;
+  padding:10px 0;
+}
+
+.bottomNav button{
+  background:none;
+  border:none;
+  color:white;
+  font-size:14px;
 }
 </style>
 </head>
@@ -68,46 +84,28 @@ nav button{
   <button onclick="login()">Login</button>
 </div>
 
-<!-- MAIN -->
+<!-- MAIN APP -->
 <div id="mainDiv" style="display:none;">
 
-  <!-- Romantic Dashboard -->
-  <div id="dashboardCard">
-    <h3 id="welcome"></h3>
-    <h4>Kumaraswamy 💙 & Pooja 💖</h4>
-    <p id="countdownText"></p>
-    <p>💍 Together Since: 25-11-2023</p>
+  <!-- HOME -->
+  <div id="home" class="section">
+
+    <div id="dashboardCard">
+      <h3 id="welcome"></h3>
+      <h4>Kumaraswamy 💙 & Pooja 💖</h4>
+      <p id="soulmateStatus"></p>
+      <p id="countdownText"></p>
+      <p id="daysTogether"></p>
+      <p>💍 Together Since: 25-11-2023</p>
+    </div>
+
   </div>
-
-  <select id="myStatus">
-    <option value="Online 🟢">Online 🟢</option>
-    <option value="In Class 📚">In Class 📚</option>
-    <option value="Sleeping 💤">Sleeping 💤</option>
-    <option value="Busy 🚗">Busy 🚗</option>
-    <option value="Thinking of you 💕">Thinking of you 💕</option>
-  </select>
-
-  <h3 id="soulmateStatus"></h3>
-
-  <nav>
-    <button onclick="showSection('chat')">💬 Chat</button>
-    <button onclick="showSection('celebration')">🎉 Celebration</button>
-    <button onclick="showSection('dates')">📅 Dates</button>
-    <button onclick="logout()">Logout</button>
-  </nav>
 
   <!-- CHAT -->
   <div id="chat" class="section">
     <div id="chatBox"></div>
     <input type="text" id="messageInput" placeholder="Type message">
     <button onclick="sendMessage()">Send</button>
-  </div>
-
-  <!-- CELEBRATION -->
-  <div id="celebration" class="section">
-    <input type="text" id="celebrateText" placeholder="Write something special">
-    <button onclick="addCelebration()">Add</button>
-    <div id="celebrationList"></div>
   </div>
 
   <!-- DATES -->
@@ -118,7 +116,24 @@ nav button{
     <div id="dateList"></div>
   </div>
 
+  <!-- CELEBRATION -->
+  <div id="celebration" class="section">
+    <input type="text" id="celebrateText" placeholder="Write something special">
+    <button onclick="addCelebration()">Add</button>
+    <div id="celebrationList"></div>
+  </div>
+
 </div>
+
+</div>
+
+<!-- Bottom Navigation -->
+<div class="bottomNav" id="bottomNav" style="display:none;">
+  <button onclick="showSection('home')">🏠 Home</button>
+  <button onclick="showSection('chat')">💬 Chat</button>
+  <button onclick="showSection('dates')">📅 Dates</button>
+  <button onclick="showSection('celebration')">🎉 Celebrate</button>
+  <button onclick="logout()">🚪 Logout</button>
 </div>
 
 <script type="module">
@@ -127,14 +142,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebas
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } 
 from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 import { 
-  getFirestore, 
-  collection, 
-  addDoc, 
-  onSnapshot, 
-  query, 
-  orderBy,
-  doc,
-  setDoc
+  getFirestore, collection, addDoc, onSnapshot, query, orderBy
 } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -156,8 +164,8 @@ const allowedUsers = {
 };
 
 window.login = async function(){
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value.trim();
+  const email = email.value.trim();
+  const password = password.value.trim();
 
   if(!allowedUsers[email]){
     alert("Access Denied ❌");
@@ -166,7 +174,7 @@ window.login = async function(){
 
   try{
     await signInWithEmailAndPassword(auth,email,password);
-  }catch(e){
+  }catch{
     alert("Wrong Email or Password ❌");
   }
 }
@@ -177,30 +185,44 @@ onAuthStateChanged(auth,user=>{
   if(user && allowedUsers[user.email]){
     loginDiv.style.display="none";
     mainDiv.style.display="block";
+    bottomNav.style.display="flex";
     welcome.innerText="Welcome "+allowedUsers[user.email];
-    showSection("chat");
-    listenSoulmateStatus(user.email);
-    updateCountdown();
+    showSection("home");
+    updateDashboard();
   }else{
     loginDiv.style.display="block";
     mainDiv.style.display="none";
+    bottomNav.style.display="none";
   }
 });
 
-window.sendMessage = async function(){
-  const text = messageInput.value;
-  if(text==="") return;
+function updateDashboard(){
+  const today=new Date();
+  const startDate=new Date("2023-11-25");
+  const diffDays=Math.floor((today-startDate)/(1000*60*60*24));
+  daysTogether.innerText="💞 Days Together: "+diffDays+" days";
 
+  const kumarBD=new Date(today.getFullYear(),1,19);
+  const poojaBD=new Date(today.getFullYear(),11,7);
+  if(today>kumarBD) kumarBD.setFullYear(today.getFullYear()+1);
+  if(today>poojaBD) poojaBD.setFullYear(today.getFullYear()+1);
+  const nextBD=kumarBD<poojaBD?kumarBD:poojaBD;
+  const name=kumarBD<poojaBD?"Kumaraswamy":"Pooja";
+  const days=Math.ceil((nextBD-today)/(1000*60*60*24));
+  countdownText.innerText="🎂 Next Birthday: "+name+" in "+days+" days 💕";
+}
+
+window.sendMessage = async function(){
+  if(messageInput.value==="") return;
   await addDoc(collection(db,"messages"),{
-    text:text,
+    text:messageInput.value,
     user:allowedUsers[auth.currentUser.email],
     time:Date.now()
   });
-
   messageInput.value="";
 };
 
-const q = query(collection(db,"messages"),orderBy("time"));
+const q=query(collection(db,"messages"),orderBy("time"));
 onSnapshot(q,snap=>{
   chatBox.innerHTML="";
   snap.forEach(doc=>{
@@ -210,41 +232,32 @@ onSnapshot(q,snap=>{
   chatBox.scrollTop=chatBox.scrollHeight;
 });
 
-// Birthday Countdown
-function updateCountdown(){
-  const today = new Date();
-  const kumarBD = new Date(today.getFullYear(),1,19);
-  const poojaBD = new Date(today.getFullYear(),11,7);
+window.addCelebration=async function(){
+  if(celebrateText.value==="") return;
+  await addDoc(collection(db,"celebrations"),{text:celebrateText.value});
+  celebrateText.value="";
+};
 
-  if(today>kumarBD) kumarBD.setFullYear(today.getFullYear()+1);
-  if(today>poojaBD) poojaBD.setFullYear(today.getFullYear()+1);
-
-  const nextBD = kumarBD<poojaBD ? kumarBD : poojaBD;
-  const name = kumarBD<poojaBD ? "Kumaraswamy" : "Pooja";
-
-  const diff = nextBD - today;
-  const days = Math.ceil(diff/(1000*60*60*24));
-
-  countdownText.innerText =
-  "🎂 Next Birthday: "+name+" in "+days+" days 💕";
-}
-
-function listenSoulmateStatus(myEmail){
-  const soulmateEmail =
-  myEmail==="kumaraswamyd2005@gmail.com"
-  ?"poojaprasanna089@gmail.com"
-  :"kumaraswamyd2005@gmail.com";
-
-  onSnapshot(doc(db,"status",soulmateEmail),(snap)=>{
-    if(snap.exists()){
-      soulmateStatus.innerText="💖 Your soulmate is: "+snap.data().state;
-    }
+onSnapshot(collection(db,"celebrations"),snap=>{
+  celebrationList.innerHTML="";
+  snap.forEach(doc=>{
+    celebrationList.innerHTML+=`<p>💖 ${doc.data().text}</p>`;
   });
-}
+});
 
-document.getElementById("myStatus").addEventListener("change",async()=>{
-  await setDoc(doc(db,"status",auth.currentUser.email),{
-    state:myStatus.value
+window.addDate=async function(){
+  if(dateTitle.value===""||dateValue.value==="") return;
+  await addDoc(collection(db,"dates"),{
+    title:dateTitle.value,
+    date:dateValue.value
+  });
+  dateTitle.value=""; dateValue.value="";
+};
+
+onSnapshot(collection(db,"dates"),snap=>{
+  dateList.innerHTML="";
+  snap.forEach(doc=>{
+    dateList.innerHTML+=`<p>📅 ${doc.data().title} - ${doc.data().date}</p>`;
   });
 });
 
