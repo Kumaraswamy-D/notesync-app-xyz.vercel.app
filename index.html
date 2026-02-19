@@ -41,6 +41,7 @@ button{
   color:black;
   padding:10px;
   border-radius:10px;
+  text-align:left;
 }
 .bottomNav{
   position:fixed;
@@ -144,7 +145,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebas
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
-/* YOUR FIREBASE CONFIG */
 const firebaseConfig = {
 apiKey:"AIzaSyDEl579k9r9NxIVss_QtQTNLoa25CGGSbI",
 authDomain:"notesync-5e7ed.firebaseapp.com",
@@ -163,6 +163,10 @@ const allowedUsers={
 "poojaprasanna089@gmail.com":"Pooja 💖"
 };
 
+let chatListener=null;
+let dateListener=null;
+let secretListener=null;
+
 /* LOGIN */
 loginBtn.onclick=async()=>{
 try{
@@ -172,7 +176,7 @@ await signInWithEmailAndPassword(auth,email.value,password.value);
 
 logoutBtn.onclick=()=>signOut(auth);
 
-/* AUTH STATE */
+/* AUTH */
 onAuthStateChanged(auth,user=>{
 if(user && allowedUsers[user.email]){
 loginDiv.style.display="none";
@@ -248,7 +252,7 @@ if(messageInput.value==="") return;
 await addDoc(collection(db,"messages"),{
 text:messageInput.value,
 email:auth.currentUser.email,
-name:allowedUsers[auth.currentUser.email],
+name:allowedUsers[auth.currentUser.email] || auth.currentUser.email,
 time:Date.now(),
 seen:false
 });
@@ -256,7 +260,11 @@ messageInput.value="";
 };
 
 function loadChat(){
-onSnapshot(query(collection(db,"messages"),orderBy("time")),async snap=>{
+if(chatListener) return;
+
+chatListener=onSnapshot(
+query(collection(db,"messages"),orderBy("time")),
+async snap=>{
 chatBox.innerHTML="";
 for(const d of snap.docs){
 let m=d.data();
@@ -290,18 +298,22 @@ eventTitle.value="";eventDate.value="";
 };
 
 function loadDates(){
-onSnapshot(collection(db,"dates"),snap=>{
+if(dateListener) return;
+
+dateListener=onSnapshot(collection(db,"dates"),snap=>{
 eventList.innerHTML="";
 snap.forEach(d=>{
 let data=d.data();
 let days=Math.ceil((new Date(data.date)-new Date())/(1000*60*60*24));
 eventList.innerHTML+=`
 <p>${data.title} - ${data.date} (${days} days left)
-<button onclick="deleteMessage('${d.id}')">🗑</button>
+<button onclick="deleteDate('${d.id}')">🗑</button>
 </p>`;
 });
 });
 }
+
+window.deleteDate=id=>deleteDoc(doc(db,"dates",id));
 
 /* SECRET */
 window.addSecret=async()=>{
@@ -311,7 +323,9 @@ secretInput.value="";
 };
 
 function loadSecret(){
-onSnapshot(collection(db,"secret"),snap=>{
+if(secretListener) return;
+
+secretListener=onSnapshot(collection(db,"secret"),snap=>{
 secretList.innerHTML="";
 snap.forEach(d=>{
 secretList.innerHTML+=`<p>💌 ${d.data().text}</p>`;
@@ -336,7 +350,7 @@ celebrateMsg.innerHTML="🎂💖 ULTRA CELEBRATION MODE ACTIVATED 💖🎉";
 }
 });
 
-/* NAV */
+/* NAVIGATION */
 window.showSection=id=>{
 document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
 document.getElementById(id).classList.add("active");
