@@ -139,11 +139,13 @@ button{
 </div>
 
 <script type="module">
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
-const firebaseConfig={
+/* YOUR FIREBASE CONFIG */
+const firebaseConfig = {
 apiKey:"AIzaSyDEl579k9r9NxIVss_QtQTNLoa25CGGSbI",
 authDomain:"notesync-5e7ed.firebaseapp.com",
 projectId:"notesync-5e7ed",
@@ -170,14 +172,17 @@ await signInWithEmailAndPassword(auth,email.value,password.value);
 
 logoutBtn.onclick=()=>signOut(auth);
 
-/* AUTH */
+/* AUTH STATE */
 onAuthStateChanged(auth,user=>{
 if(user && allowedUsers[user.email]){
 loginDiv.style.display="none";
 mainDiv.style.display="block";
 navBar.style.display="flex";
 
-setDoc(doc(db,"status",user.uid),{email:user.email,online:true});
+setDoc(doc(db,"status",user.uid),{
+email:user.email,
+online:true
+});
 
 loadChat();
 loadDates();
@@ -191,13 +196,24 @@ navBar.style.display="none";
 }
 });
 
+/* AUTO OFFLINE */
+window.addEventListener("beforeunload", async ()=>{
+if(auth.currentUser){
+await setDoc(doc(db,"status",auth.currentUser.uid),{
+email:auth.currentUser.email,
+online:false
+});
+}
+});
+
 /* ONLINE STATUS */
 onSnapshot(collection(db,"status"),snap=>{
-let current=auth.currentUser;
-if(!current) return;
+if(!auth.currentUser) return;
 let online=false;
 snap.forEach(d=>{
-if(d.data().email!==current.email && d.data().online) online=true;
+if(d.data().email!==auth.currentUser.email && d.data().online){
+online=true;
+}
 });
 onlineStatus.innerHTML=online?"🟢 Soulmate Online":"🔴 Soulmate Offline";
 window.bothOnline=online;
@@ -245,7 +261,7 @@ chatBox.innerHTML="";
 for(const d of snap.docs){
 let m=d.data();
 
-if(m.email!==auth.currentUser.email && !m.seen){
+if(auth.currentUser && m.email!==auth.currentUser.email && !m.seen){
 await updateDoc(doc(db,"messages",d.id),{seen:true});
 }
 
@@ -278,10 +294,10 @@ onSnapshot(collection(db,"dates"),snap=>{
 eventList.innerHTML="";
 snap.forEach(d=>{
 let data=d.data();
+let days=Math.ceil((new Date(data.date)-new Date())/(1000*60*60*24));
 eventList.innerHTML+=`
-<p>
-${data.title} - ${data.date}
-<button onclick="deleteDoc(doc(db,'dates','${d.id}'))">🗑</button>
+<p>${data.title} - ${data.date} (${days} days left)
+<button onclick="deleteMessage('${d.id}')">🗑</button>
 </p>`;
 });
 });
@@ -303,20 +319,29 @@ secretList.innerHTML+=`<p>💌 ${d.data().text}</p>`;
 });
 }
 
-/* CAKE */
-window.cutCake=()=>{
-if(window.bothOnline){
-celebrateMsg.innerHTML="🎂 Cake Cut Successfully 💖";
-}else{
-celebrateMsg.innerHTML="Both must be online to cut cake 💔";
+/* ULTRA CELEBRATION */
+window.cutCake=async()=>{
+if(!window.bothOnline){
+celebrateMsg.innerHTML="Both must be online 💔";
+return;
 }
+await setDoc(doc(db,"celebration","cake"),{
+time:Date.now()
+});
 };
+
+onSnapshot(doc(db,"celebration","cake"),snap=>{
+if(snap.exists()){
+celebrateMsg.innerHTML="🎂💖 ULTRA CELEBRATION MODE ACTIVATED 💖🎉";
+}
+});
 
 /* NAV */
 window.showSection=id=>{
 document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
 document.getElementById(id).classList.add("active");
 };
+
 </script>
 </body>
 </html>
