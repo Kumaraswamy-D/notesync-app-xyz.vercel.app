@@ -2,44 +2,38 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>NoteSync 💖 Ultra</title>
+<title>NoteSync 💖</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
 body{
   margin:0;
-  font-family: Arial;
-  background: linear-gradient(135deg,#ff758c,#ff7eb3);
-  color:white;
+  font-family:Arial;
+  background:linear-gradient(135deg,#ff758c,#ff7eb3);
   text-align:center;
+  color:white;
 }
-
-.section{ display:none; padding:15px; }
-.active{ display:block; }
-
+.section{display:none;padding:15px;}
+.active{display:block;}
 .card{
   background:white;
   color:black;
+  margin:10px;
   padding:15px;
-  margin:15px;
-  border-radius:20px;
-  box-shadow:0 10px 25px rgba(0,0,0,0.3);
+  border-radius:15px;
+  box-shadow:0 5px 15px rgba(0,0,0,0.2);
 }
-
 input,button{
   padding:8px;
   margin:5px;
   border-radius:8px;
   border:none;
 }
-
 button{
   background:#ff4d6d;
   color:white;
   cursor:pointer;
-  font-weight:bold;
 }
-
 #chatBox{
   height:250px;
   overflow-y:auto;
@@ -47,9 +41,7 @@ button{
   color:black;
   padding:10px;
   border-radius:10px;
-  text-align:left;
 }
-
 .bottomNav{
   position:fixed;
   bottom:0;
@@ -62,63 +54,77 @@ button{
 .bottomNav button{
   background:white;
   color:#ff4d6d;
-}
-
-.ultraMode{
-  animation: rainbow 5s infinite alternate;
-}
-@keyframes rainbow{
-  0%{background:#ff758c;}
-  100%{background:#ff00aa;}
+  font-weight:bold;
 }
 </style>
 </head>
 <body>
 
-<h2>💖 NoteSync Ultra 💖</h2>
+<h2>💖 NoteSync 💖</h2>
 
 <div id="loginDiv">
-  <input type="email" id="email" placeholder="Email"><br>
-  <input type="password" id="password" placeholder="Password"><br>
-  <button id="loginBtn">Login</button>
+<input type="email" id="email" placeholder="Email"><br>
+<input type="password" id="password" placeholder="Password"><br>
+<button id="loginBtn">Login</button>
 </div>
 
-<div id="mainDiv" style="display:none; padding-bottom:70px;">
+<div id="mainDiv" style="display:none;padding-bottom:70px;">
 
 <!-- HOME -->
 <div id="home" class="section active">
-  <div class="card">
-    <h2>💙 Kumaraswamy ❤️ Pooja 💖</h2>
-    <p id="soulStatus"></p>
-  </div>
-  <div class="card">
-    <h3>🎂 Birthdays</h3>
-    <p id="birthdayCountdown"></p>
-  </div>
-  <div class="card">
-    <h3>💍 Anniversary</h3>
-    <p id="anniCountdown"></p>
-  </div>
-  <div class="card">
-    <h3>💞 Days Together</h3>
-    <p id="daysTogether"></p>
-  </div>
+<div class="card">
+<h2>💙 Kumaraswamy ❤️ Pooja 💖</h2>
+<p id="onlineStatus"></p>
+</div>
+
+<div class="card">
+<h3>🎂 Birthdays</h3>
+<p id="birthday"></p>
+</div>
+
+<div class="card">
+<h3>💍 Anniversary</h3>
+<p id="anniversaryText"></p>
+</div>
+
+<div class="card">
+<h3>💞 Days Together</h3>
+<p id="daysTogether"></p>
+</div>
 </div>
 
 <!-- CHAT -->
 <div id="chat" class="section">
-  <div id="chatBox"></div>
-  <input type="text" id="messageInput" placeholder="Type message">
-  <button id="sendBtn">Send</button>
+<div id="chatBox"></div>
+<input type="text" id="messageInput" placeholder="Type message">
+<button id="sendBtn">Send</button>
+</div>
+
+<!-- IMPORTANT DATES -->
+<div id="dates" class="section">
+<div class="card">
+<input type="text" id="eventTitle" placeholder="Event Name">
+<input type="date" id="eventDate">
+<button onclick="addEvent()">Add</button>
+<div id="eventList"></div>
+</div>
 </div>
 
 <!-- CELEBRATION -->
 <div id="celebration" class="section">
-  <div class="card">
-    <h3>🎉 Ultra Celebration</h3>
-    <button onclick="celebrate()">Cut Cake 🎂</button>
-    <p id="celebrateMsg"></p>
-  </div>
+<div class="card">
+<button onclick="cutCake()">🎂 Cut Cake</button>
+<p id="celebrateMsg"></p>
+</div>
+</div>
+
+<!-- SECRET -->
+<div id="secret" class="section">
+<div class="card">
+<input type="text" id="secretInput" placeholder="Write secret message">
+<button onclick="addSecret()">Save</button>
+<div id="secretList"></div>
+</div>
 </div>
 
 </div>
@@ -126,65 +132,75 @@ button{
 <div class="bottomNav" id="navBar" style="display:none;">
 <button onclick="showSection('home')">🏠</button>
 <button onclick="showSection('chat')">💬</button>
+<button onclick="showSection('dates')">📅</button>
 <button onclick="showSection('celebration')">🎉</button>
+<button onclick="showSection('secret')">💌</button>
 <button id="logoutBtn">🚪</button>
 </div>
 
 <script type="module">
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
-/* YOUR CONFIG */
-const firebaseConfig = {
-  apiKey: "AIzaSyDEl579k9r9NxIVss_QtQTNLoa25CGGSbI",
-  authDomain: "notesync-5e7ed.firebaseapp.com",
-  projectId: "notesync-5e7ed",
-  storageBucket: "notesync-5e7ed.firebasestorage.app",
-  messagingSenderId: "486342879531",
-  appId: "1:486342879531:web:76ed522f873d1ecca67d6e"
+const firebaseConfig={
+apiKey:"AIzaSyDEl579k9r9NxIVss_QtQTNLoa25CGGSbI",
+authDomain:"notesync-5e7ed.firebaseapp.com",
+projectId:"notesync-5e7ed",
+storageBucket:"notesync-5e7ed.firebasestorage.app",
+messagingSenderId:"486342879531",
+appId:"1:486342879531:web:76ed522f873d1ecca67d6e"
 };
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+const app=initializeApp(firebaseConfig);
+const auth=getAuth();
+const db=getFirestore();
 
-let bothOnline=false;
+const allowedUsers={
+"kumaraswamyd2005@gmail.com":"Kumaraswamy 💙",
+"poojaprasanna089@gmail.com":"Pooja 💖"
+};
 
 /* LOGIN */
 loginBtn.onclick=async()=>{
-  try{
-    await signInWithEmailAndPassword(auth,email.value,password.value);
-  }catch(e){ alert(e.message); }
+try{
+await signInWithEmailAndPassword(auth,email.value,password.value);
+}catch(e){alert(e.message);}
 };
 
 logoutBtn.onclick=()=>signOut(auth);
 
 /* AUTH */
 onAuthStateChanged(auth,user=>{
-  if(user){
-    loginDiv.style.display="none";
-    mainDiv.style.display="block";
-    navBar.style.display="flex";
+if(user && allowedUsers[user.email]){
+loginDiv.style.display="none";
+mainDiv.style.display="block";
+navBar.style.display="flex";
 
-    setDoc(doc(db,"status",user.uid),{
-      online:true,
-      email:user.email
-    });
+setDoc(doc(db,"status",user.uid),{email:user.email,online:true});
 
-    onSnapshot(collection(db,"status"),snap=>{
-      let onlineCount=0;
-      snap.forEach(d=>{ if(d.data().online) onlineCount++; });
-      bothOnline = onlineCount>=2;
-      soulStatus.innerHTML=bothOnline?
-      "🟢 Both Online 💖":
-      "🔴 Waiting for soulmate...";
-    });
+loadChat();
+loadDates();
+loadSecret();
+updateDashboard();
 
-    loadChat();
-    updateDashboard();
-  }
+}else{
+loginDiv.style.display="block";
+mainDiv.style.display="none";
+navBar.style.display="none";
+}
+});
+
+/* ONLINE STATUS */
+onSnapshot(collection(db,"status"),snap=>{
+let current=auth.currentUser;
+if(!current) return;
+let online=false;
+snap.forEach(d=>{
+if(d.data().email!==current.email && d.data().online) online=true;
+});
+onlineStatus.innerHTML=online?"🟢 Soulmate Online":"🔴 Soulmate Offline";
+window.bothOnline=online;
 });
 
 /* DASHBOARD */
@@ -192,67 +208,115 @@ const myBirthday=new Date("2005-02-19");
 const herBirthday=new Date("2004-12-07");
 const anniversary=new Date("2023-11-25");
 
-function countdown(date){
-  let now=new Date();
-  let next=new Date(now.getFullYear(),date.getMonth(),date.getDate());
-  if(next<now) next.setFullYear(now.getFullYear()+1);
-  return Math.ceil((next-now)/(1000*60*60*24));
+function daysLeft(date){
+let now=new Date();
+let next=new Date(now.getFullYear(),date.getMonth(),date.getDate());
+if(next<now) next.setFullYear(now.getFullYear()+1);
+return Math.ceil((next-now)/(1000*60*60*24));
 }
 
 function updateDashboard(){
-  birthdayCountdown.innerHTML=
-  `Kumaraswamy: ${countdown(myBirthday)} days <br>
-   Pooja: ${countdown(herBirthday)} days`;
+birthday.innerHTML=
+`Kumaraswamy: ${daysLeft(myBirthday)} days<br>
+Pooja: ${daysLeft(herBirthday)} days`;
 
-  anniCountdown.innerHTML=`${countdown(anniversary)} days left`;
-  daysTogether.innerHTML=
-  `${Math.floor((new Date()-anniversary)/(1000*60*60*24))} days 💞`;
+anniversaryText.innerHTML=`${daysLeft(anniversary)} days left`;
+
+let days=Math.floor((new Date()-anniversary)/(1000*60*60*24));
+daysTogether.innerHTML=`${days} days`;
 }
 
-/* REAL TIME CHAT */
+/* CHAT */
 sendBtn.onclick=async()=>{
-  if(messageInput.value==="") return;
-  await addDoc(collection(db,"messages"),{
-    text:messageInput.value,
-    email:auth.currentUser.email,
-    time:Date.now()
-  });
-  messageInput.value="";
+if(messageInput.value==="") return;
+await addDoc(collection(db,"messages"),{
+text:messageInput.value,
+email:auth.currentUser.email,
+name:allowedUsers[auth.currentUser.email],
+time:Date.now(),
+seen:false
+});
+messageInput.value="";
 };
 
 function loadChat(){
-  onSnapshot(query(collection(db,"messages"),orderBy("time")),snap=>{
-    chatBox.innerHTML="";
-    snap.forEach(d=>{
-      let m=d.data();
-      chatBox.innerHTML+=`
-      <p>
-      <b>${m.email}:</b> ${m.text}
-      ${m.email===auth.currentUser.email?
-      `<button onclick="deleteMessage('${d.id}')">🗑</button>`:""}
-      </p>`;
-    });
-    chatBox.scrollTop=chatBox.scrollHeight;
-  });
+onSnapshot(query(collection(db,"messages"),orderBy("time")),async snap=>{
+chatBox.innerHTML="";
+for(const d of snap.docs){
+let m=d.data();
+
+if(m.email!==auth.currentUser.email && !m.seen){
+await updateDoc(doc(db,"messages",d.id),{seen:true});
+}
+
+chatBox.innerHTML+=`
+<p>
+<b>${m.name}:</b> ${m.text}
+${m.email===auth.currentUser.email?(m.seen?" ✅✅":" ✅"):""}
+${m.email===auth.currentUser.email?
+`<button onclick="deleteMessage('${d.id}')">🗑</button>`:""}
+</p>`;
+}
+chatBox.scrollTop=chatBox.scrollHeight;
+});
 }
 
 window.deleteMessage=id=>deleteDoc(doc(db,"messages",id));
 
-/* CELEBRATION */
-window.celebrate=()=>{
-  if(!bothOnline){
-    celebrateMsg.innerHTML="❌ Both must be online!";
-    return;
-  }
-  document.body.classList.add("ultraMode");
-  celebrateMsg.innerHTML="🎂 Cake Cut Successfully 💖🔥";
+/* IMPORTANT DATES */
+window.addEvent=async()=>{
+if(eventTitle.value===""||eventDate.value==="") return;
+await addDoc(collection(db,"dates"),{
+title:eventTitle.value,
+date:eventDate.value
+});
+eventTitle.value="";eventDate.value="";
 };
 
+function loadDates(){
+onSnapshot(collection(db,"dates"),snap=>{
+eventList.innerHTML="";
+snap.forEach(d=>{
+let data=d.data();
+eventList.innerHTML+=`
+<p>
+${data.title} - ${data.date}
+<button onclick="deleteDoc(doc(db,'dates','${d.id}'))">🗑</button>
+</p>`;
+});
+});
+}
+
+/* SECRET */
+window.addSecret=async()=>{
+if(secretInput.value==="") return;
+await addDoc(collection(db,"secret"),{text:secretInput.value});
+secretInput.value="";
+};
+
+function loadSecret(){
+onSnapshot(collection(db,"secret"),snap=>{
+secretList.innerHTML="";
+snap.forEach(d=>{
+secretList.innerHTML+=`<p>💌 ${d.data().text}</p>`;
+});
+});
+}
+
+/* CAKE */
+window.cutCake=()=>{
+if(window.bothOnline){
+celebrateMsg.innerHTML="🎂 Cake Cut Successfully 💖";
+}else{
+celebrateMsg.innerHTML="Both must be online to cut cake 💔";
+}
+};
+
+/* NAV */
 window.showSection=id=>{
-  document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
+document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
+document.getElementById(id).classList.add("active");
 };
-
 </script>
 </body>
 </html>
