@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>NoteSync 💖</title>
+<title>NoteSync 💖 Ultra</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -12,6 +12,7 @@ body{
   background: linear-gradient(135deg,#ff758c,#ff7eb3);
   color:white;
   text-align:center;
+  transition:1s;
 }
 
 .section{ display:none; padding:15px; }
@@ -21,10 +22,12 @@ body{
   background:white;
   color:black;
   padding:15px;
-  margin:10px;
-  border-radius:15px;
-  box-shadow:0 5px 15px rgba(0,0,0,0.2);
+  margin:15px;
+  border-radius:20px;
+  box-shadow:0 10px 25px rgba(0,0,0,0.3);
+  transition:0.4s;
 }
+.card:hover{ transform:scale(1.05); }
 
 input,button{
   padding:8px;
@@ -37,15 +40,7 @@ button{
   background:#ff4d6d;
   color:white;
   cursor:pointer;
-}
-
-#chatBox{
-  height:250px;
-  overflow-y:auto;
-  background:white;
-  color:black;
-  padding:10px;
-  border-radius:10px;
+  font-weight:bold;
 }
 
 .bottomNav{
@@ -60,13 +55,31 @@ button{
 .bottomNav button{
   background:white;
   color:#ff4d6d;
-  font-weight:bold;
+}
+
+/* Ultra Mode */
+.ultraMode{
+  animation: rainbow 5s infinite alternate;
+}
+@keyframes rainbow{
+  0%{background:#ff758c;}
+  50%{background:#ff4d6d;}
+  100%{background:#ff00aa;}
+}
+
+.firework{
+  font-size:30px;
+  animation: explode 1s ease-out forwards;
+}
+@keyframes explode{
+  0%{transform:scale(0); opacity:1;}
+  100%{transform:scale(2); opacity:0;}
 }
 </style>
 </head>
 <body>
 
-<h2>💖 NoteSync 💖</h2>
+<h2>💖 NoteSync Ultra 💖</h2>
 
 <div id="loginDiv">
   <input type="email" id="email" placeholder="Email"><br>
@@ -76,10 +89,9 @@ button{
 
 <div id="mainDiv" style="display:none; padding-bottom:70px;">
 
-<!-- HOME -->
 <div id="home" class="section active">
   <div class="card">
-    <h2 id="coupleNames"></h2>
+    <h2>💙 Kumaraswamy ❤️ Pooja 💖</h2>
     <p id="soulStatus"></p>
   </div>
 
@@ -99,38 +111,11 @@ button{
   </div>
 </div>
 
-<!-- CHAT -->
-<div id="chat" class="section">
-  <div id="chatBox"></div>
-  <input type="text" id="messageInput" placeholder="Type message">
-  <button id="sendBtn">Send</button>
-</div>
-
-<!-- IMPORTANT DATES -->
-<div id="dates" class="section">
-  <div class="card">
-    <input type="text" id="eventTitle" placeholder="Event Name">
-    <input type="date" id="eventDate">
-    <button onclick="addEvent()">Add</button>
-    <div id="eventList"></div>
-  </div>
-</div>
-
-<!-- CELEBRATION -->
 <div id="celebration" class="section">
   <div class="card">
-    <h3>🎉 Celebration</h3>
+    <h3>🎉 Ultra Celebration</h3>
     <button onclick="celebrate()">Cut Cake 🎂</button>
-    <p id="celebrateMsg"></p>
-  </div>
-</div>
-
-<!-- SECRET BOX -->
-<div id="secret" class="section">
-  <div class="card">
-    <input type="text" id="secretText" placeholder="Write special message">
-    <button onclick="addSecret()">Save</button>
-    <div id="secretList"></div>
+    <div id="celebrateMsg"></div>
   </div>
 </div>
 
@@ -138,10 +123,7 @@ button{
 
 <div class="bottomNav" id="navBar" style="display:none;">
 <button onclick="showSection('home')">🏠</button>
-<button onclick="showSection('chat')">💬</button>
-<button onclick="showSection('dates')">📅</button>
 <button onclick="showSection('celebration')">🎉</button>
-<button onclick="showSection('secret')">💌</button>
 <button id="logoutBtn">🚪</button>
 </div>
 
@@ -149,8 +131,9 @@ button{
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+import { getFirestore, collection, setDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
+/* 🔥 YOUR REAL CONFIG */
 const firebaseConfig = {
   apiKey: "AIzaSyDEl579k9r9NxIVss_QtQTNLoa25CGGSbI",
   authDomain: "notesync-5e7ed.firebaseapp.com",
@@ -161,15 +144,11 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const auth = getAuth();
-const db = getFirestore();
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-const allowedUsers={
-  "kumaraswamyd2005@gmail.com":"Kumaraswamy 💙",
-  "poojaprasanna089@gmail.com":"Pooja 💖"
-};
+let bothOnline=false;
 
-/* LOGIN */
 loginBtn.onclick=async()=>{
   try{
     await signInWithEmailAndPassword(auth,email.value,password.value);
@@ -178,27 +157,33 @@ loginBtn.onclick=async()=>{
 
 logoutBtn.onclick=()=>signOut(auth);
 
-/* AUTH STATE */
 onAuthStateChanged(auth,user=>{
-  if(user && allowedUsers[user.email]){
+  if(user){
     loginDiv.style.display="none";
     mainDiv.style.display="block";
     navBar.style.display="flex";
-    coupleNames.innerHTML="💙 Kumaraswamy ❤️ Pooja 💖";
-    updateDashboard();
 
-    setDoc(doc(db,"status",user.uid),{online:true,email:user.email});
-
-    onSnapshot(collection(db,"status"),snap=>{
-      let online=false;
-      snap.forEach(d=>{
-        if(d.data().email!==user.email && d.data().online) online=true;
-      });
-      soulStatus.innerHTML=online?
-      "🟢 Your soulmate is Online 💖":
-      "🔴 Your soulmate is Offline";
+    setDoc(doc(db,"status",user.uid),{
+      online:true,
+      email:user.email
     });
 
+    onSnapshot(collection(db,"status"),snap=>{
+      let onlineCount=0;
+      snap.forEach(d=>{
+        if(d.data().online) onlineCount++;
+      });
+
+      if(onlineCount>=2){
+        bothOnline=true;
+        soulStatus.innerHTML="🟢 Both Online 💖 Ready to Celebrate!";
+      }else{
+        bothOnline=false;
+        soulStatus.innerHTML="🔴 Waiting for your soulmate...";
+      }
+    });
+
+    updateDashboard();
   }else{
     loginDiv.style.display="block";
     mainDiv.style.display="none";
@@ -206,7 +191,7 @@ onAuthStateChanged(auth,user=>{
   }
 });
 
-/* DASHBOARD */
+/* Dates */
 const myBirthday=new Date("2005-02-19");
 const herBirthday=new Date("2004-12-07");
 const anniversary=new Date("2023-11-25");
@@ -226,75 +211,29 @@ function updateDashboard(){
   anniCountdown.innerHTML=`${countdown(anniversary)} days left`;
 
   let days=Math.floor((new Date()-anniversary)/(1000*60*60*24));
-  daysTogether.innerHTML=`${days} days`;
+  daysTogether.innerHTML=`${days} days Together 💞`;
 }
 
-/* CHAT */
-sendBtn.onclick=async()=>{
-  if(messageInput.value==="") return;
-  await addDoc(collection(db,"messages"),{
-    text:messageInput.value,
-    user:allowedUsers[auth.currentUser.email],
-    email:auth.currentUser.email,
-    time:Date.now()
-  });
-  messageInput.value="";
-};
-
-onSnapshot(query(collection(db,"messages"),orderBy("time")),snap=>{
-  chatBox.innerHTML="";
-  snap.forEach(d=>{
-    let m=d.data();
-    chatBox.innerHTML+=`
-    <p>
-    <b>${m.user}:</b> ${m.text}
-    ${m.email===auth.currentUser.email?
-    `<button onclick="deleteMessage('${d.id}')">🗑</button>`:""}
-    </p>`;
-  });
-});
-
-window.deleteMessage=id=>deleteDoc(doc(db,"messages",id));
-
-/* IMPORTANT DATES */
-window.addEvent=async()=>{
-  if(eventTitle.value===""||eventDate.value==="") return;
-  await addDoc(collection(db,"dates"),{
-    title:eventTitle.value,
-    date:eventDate.value
-  });
-  eventTitle.value=""; eventDate.value="";
-};
-
-onSnapshot(collection(db,"dates"),snap=>{
-  eventList.innerHTML="";
-  snap.forEach(d=>{
-    eventList.innerHTML+=`
-    <p>${d.data().title} - ${d.data().date}
-    <button onclick="deleteDoc(doc(db,'dates','${d.id}'))">🗑</button>
-    </p>`;
-  });
-});
-
-/* SECRET BOX */
-window.addSecret=async()=>{
-  if(secretText.value==="") return;
-  await addDoc(collection(db,"secret"),{
-    text:secretText.value
-  });
-  secretText.value="";
-};
-
-onSnapshot(collection(db,"secret"),snap=>{
-  secretList.innerHTML="";
-  snap.forEach(d=>{
-    secretList.innerHTML+=`<p>💌 ${d.data().text}</p>`;
-  });
-});
-
-/* CELEBRATION */
+/* Ultra Celebration */
 window.celebrate=()=>{
-  celebrateMsg.innerHTML="🎂 Cake Cut! 🎉 Love Forever 💖";
+  if(!bothOnline){
+    celebrateMsg.innerHTML="❌ Both must be online!";
+    return;
+  }
+
+  document.body.classList.add("ultraMode");
+  celebrateMsg.innerHTML="🎂 Cake Cut Successfully 💖🔥";
+
+  for(let i=0;i<15;i++){
+    let fw=document.createElement("div");
+    fw.className="firework";
+    fw.innerHTML="🎆";
+    fw.style.position="fixed";
+    fw.style.left=Math.random()*100+"%";
+    fw.style.top=Math.random()*100+"%";
+    document.body.appendChild(fw);
+    setTimeout(()=>fw.remove(),1000);
+  }
 };
 
 window.showSection=id=>{
