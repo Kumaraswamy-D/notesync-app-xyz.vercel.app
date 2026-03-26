@@ -15,6 +15,7 @@ body{
 }
 .section{display:none;padding:15px;}
 .active{display:block;}
+
 .card{
   background:white;
   color:black;
@@ -22,19 +23,9 @@ body{
   padding:15px;
   border-radius:15px;
 }
-input,button{
-  padding:8px;
-  margin:5px;
-  border-radius:8px;
-  border:none;
-}
-button{
-  background:#ff4d6d;
-  color:white;
-  cursor:pointer;
-}
+
 #chatBox{
-  height:250px;
+  height:300px;
   overflow-y:auto;
   background:white;
   color:black;
@@ -42,12 +33,25 @@ button{
   border-radius:10px;
   text-align:left;
 }
-.chatMsg{
-  background:#ffe0e6;
+
+/* 💬 chat bubbles */
+.me{
+  text-align:right;
+  background:#ff4d6d;
+  color:white;
   padding:8px;
-  border-radius:8px;
-  margin:5px 0;
+  border-radius:10px;
+  margin:5px;
 }
+
+.other{
+  text-align:left;
+  background:#eee;
+  padding:8px;
+  border-radius:10px;
+  margin:5px;
+}
+
 .bottomNav{
   position:fixed;
   bottom:0;
@@ -57,9 +61,12 @@ button{
   display:flex;
   justify-content:space-around;
 }
-.bottomNav button{
-  background:white;
-  color:#ff4d6d;
+
+button{
+  padding:8px;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
 }
 </style>
 </head>
@@ -76,59 +83,44 @@ button{
 
 <div id="mainDiv" style="display:none;padding-bottom:70px;">
 
-<div id="home" class="section active">
-<div class="card">
-<h2>💙 Kumaraswamy ❤️ Pooja 💖</h2>
-<p id="onlineStatus"></p>
-</div>
-
-<div class="card">
-<h3>🎂 Birthdays</h3>
-<p id="birthday"></p>
-</div>
-
-<div class="card">
-<h3>💍 Anniversary</h3>
-<p id="anniversaryText"></p>
-</div>
-
-<div class="card">
-<h3>💞 Days Together</h3>
-<p id="daysTogether"></p>
-</div>
-</div>
-
-<div id="chat" class="section">
+<div id="chat" class="section active">
 <div id="chatBox"></div>
-<input type="text" id="messageInput">
+<input type="text" id="messageInput" placeholder="Type message">
 <button id="sendBtn">Send</button>
 </div>
 
 </div>
 
 <div class="bottomNav" id="navBar" style="display:none;">
-<button onclick="showSection('home')">🏠</button>
-<button onclick="showSection('chat')">💬</button>
-<button id="logoutBtn">🚪</button>
+<button id="logoutBtn">Logout</button>
 </div>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDEl579k9r9NxIVss_QtQTNLoa25CGGSbI",
   authDomain: "notesync-5e7ed.firebaseapp.com",
   projectId: "notesync-5e7ed",
+  storageBucket: "notesync-5e7ed.firebasestorage.app",
+  messagingSenderId: "486342879531",
+  appId: "1:486342879531:web:76ed522f873d1ecca67d6e"
 };
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth();
 const db = getFirestore();
 
-// CONNECT ELEMENTS
+// USERS
+const users = {
+  "kumaraswamyd2005@gmail.com": "Kumaraswamy 💙",
+  "poojaprasanna089@gmail.com": "Pooja 💖"
+};
+
+// ELEMENTS
 const loginBtn = document.getElementById("loginBtn");
 const logoutBtn = document.getElementById("logoutBtn");
 const email = document.getElementById("email");
@@ -140,77 +132,70 @@ const chatBox = document.getElementById("chatBox");
 const messageInput = document.getElementById("messageInput");
 const sendBtn = document.getElementById("sendBtn");
 
-const birthday = document.getElementById("birthday");
-const anniversaryText = document.getElementById("anniversaryText");
-const daysTogether = document.getElementById("daysTogether");
-
 // LOGIN
-loginBtn.onclick = async () => {
-  try {
-    await signInWithEmailAndPassword(auth, email.value, password.value);
-  } catch (e) {
+loginBtn.onclick = async ()=>{
+  try{
+    await signInWithEmailAndPassword(auth,email.value,password.value);
+  }catch(e){
     alert(e.message);
   }
 };
 
-logoutBtn.onclick = () => signOut(auth);
+// LOGOUT
+logoutBtn.onclick = ()=> signOut(auth);
 
-// AUTH
-onAuthStateChanged(auth, user => {
-  if (user) {
-    loginDiv.style.display = "none";
-    mainDiv.style.display = "block";
-    navBar.style.display = "flex";
+// AUTH STATE
+onAuthStateChanged(auth,user=>{
+  if(user){
+    loginDiv.style.display="none";
+    mainDiv.style.display="block";
+    navBar.style.display="flex";
     loadChat();
-    updateDashboard();
-  } else {
-    loginDiv.style.display = "block";
-    mainDiv.style.display = "none";
-    navBar.style.display = "none";
+  }else{
+    loginDiv.style.display="block";
   }
 });
 
-// DASHBOARD
-const anniversary = new Date("2023-11-25");
-
-function updateDashboard(){
-  let days = Math.floor((new Date()-anniversary)/(1000*60*60*24));
-  daysTogether.innerHTML = `${days} days`;
-}
-
-// CHAT FIXED
-sendBtn.onclick = async () => {
-  if (!messageInput.value) return;
-
-  sendBtn.disabled = true;
+// SEND MESSAGE
+sendBtn.onclick = async ()=>{
+  if(!messageInput.value) return;
 
   await addDoc(collection(db,"messages"),{
     text: messageInput.value,
-    time: Date.now()
+    email: auth.currentUser.email,
+    name: users[auth.currentUser.email] || "Unknown",
+    time: serverTimestamp()
   });
 
   messageInput.value="";
-  sendBtn.disabled=false;
 };
 
+// ENTER KEY
 messageInput.addEventListener("keypress", e=>{
   if(e.key==="Enter") sendBtn.click();
 });
 
+// LOAD CHAT
 function loadChat(){
-  onSnapshot(query(collection(db,"messages"),orderBy("time")), snap=>{
+  onSnapshot(query(collection(db,"messages"),orderBy("time","asc")), snap=>{
     chatBox.innerHTML="";
+
     snap.forEach(doc=>{
-      chatBox.innerHTML += `<div class="chatMsg">${doc.data().text}</div>`;
+      let m = doc.data();
+
+      let cls = (m.email === auth.currentUser.email) ? "me" : "other";
+
+      chatBox.innerHTML += `
+        <div class="${cls}">
+          <b>${m.name}</b><br>
+          ${m.text}
+        </div>
+      `;
     });
+
+    chatBox.scrollTop = chatBox.scrollHeight;
   });
 }
-
-// NAV
-window.showSection=id=>{
-  document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
-};
 
 </script>
 
