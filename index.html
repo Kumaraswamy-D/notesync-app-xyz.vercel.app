@@ -200,7 +200,7 @@ navBar.style.display="none";
 }
 });
 
-// CHAT SEND FIX
+// SEND MESSAGE
 sendBtn.onclick=async()=>{
 if(!messageInput.value.trim()) return;
 
@@ -218,26 +218,27 @@ messageInput.value="";
 sendBtn.disabled=false;
 };
 
-// CHAT LOAD FIX (NO DUPLICATE)
+// FIXED CHAT (NO DUPLICATE)
 function loadChat(){
 
-// remove old listener
 if(unsubscribeChat){
 unsubscribeChat();
 }
 
 unsubscribeChat = onSnapshot(
 query(collection(db,"messages"),orderBy("time","asc")),
-async snap=>{
+(snap)=>{
 
 chatBox.innerHTML="";
 
-for(const d of snap.docs){
+let updates = [];
+
+snap.forEach(d=>{
 let m=d.data();
 
-// mark seen
+// mark seen (batched fix)
 if(m.email!==auth.currentUser.email && !m.seen){
-await updateDoc(doc(db,"messages",d.id),{seen:true});
+updates.push(updateDoc(doc(db,"messages",d.id),{seen:true}));
 }
 
 let cls=(m.email===auth.currentUser.email)?"me":"other";
@@ -248,7 +249,10 @@ chatBox.innerHTML+=`
 ${m.text}
 ${m.email===auth.currentUser.email ? (m.seen?" ✔✔":" ✔") : ""}
 </div>`;
-}
+});
+
+// apply updates after loop
+Promise.all(updates);
 
 chatBox.scrollTop=chatBox.scrollHeight;
 });
