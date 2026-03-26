@@ -77,7 +77,6 @@ button{
 
 <div id="mainDiv" style="display:none;padding-bottom:70px;">
 
-<!-- HOME -->
 <div id="home" class="section active">
 <div class="card">
 <h2>💙 Kumaraswamy ❤️ Pooja 💖</h2>
@@ -100,14 +99,12 @@ button{
 </div>
 </div>
 
-<!-- CHAT -->
 <div id="chat" class="section">
 <div id="chatBox"></div>
 <input type="text" id="messageInput" placeholder="Type message">
 <button id="sendBtn">Send</button>
 </div>
 
-<!-- IMPORTANT DATES -->
 <div id="dates" class="section">
 <div class="card">
 <input type="text" id="eventTitle" placeholder="Event Name">
@@ -117,7 +114,6 @@ button{
 </div>
 </div>
 
-<!-- CELEBRATION -->
 <div id="celebration" class="section">
 <div class="card">
 <button onclick="cutCake()">🎂 Cut Cake</button>
@@ -125,7 +121,6 @@ button{
 </div>
 </div>
 
-<!-- SECRET -->
 <div id="secret" class="section">
 <div class="card">
 <input type="text" id="secretInput" placeholder="Write secret message">
@@ -152,7 +147,7 @@ import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from
 import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
 const firebaseConfig = {
-apiKey:"AIzaSyDEl579k9r9NxIVss_QtQTNLoa25CGGSbI",
+apiKey:"AIzaSy...",
 authDomain:"notesync-5e7ed.firebaseapp.com",
 projectId:"notesync-5e7ed",
 storageBucket:"notesync-5e7ed.firebasestorage.app",
@@ -164,14 +159,25 @@ const app=initializeApp(firebaseConfig);
 const auth=getAuth();
 const db=getFirestore();
 
+// ✅ FIX: connect elements
+const loginBtn = document.getElementById("loginBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+const email = document.getElementById("email");
+const password = document.getElementById("password");
+const loginDiv = document.getElementById("loginDiv");
+const mainDiv = document.getElementById("mainDiv");
+const navBar = document.getElementById("navBar");
+const chatBox = document.getElementById("chatBox");
+const messageInput = document.getElementById("messageInput");
+const sendBtn = document.getElementById("sendBtn");
+const onlineStatus = document.getElementById("onlineStatus");
+
 const allowedUsers={
 "kumaraswamyd2005@gmail.com":"Kumaraswamy 💙",
 "poojaprasanna089@gmail.com":"Pooja 💖"
 };
 
-let chatListener=null;
-
-/* LOGIN */
+// LOGIN
 loginBtn.onclick=async()=>{
 try{
 await signInWithEmailAndPassword(auth,email.value,password.value);
@@ -180,29 +186,14 @@ await signInWithEmailAndPassword(auth,email.value,password.value);
 
 logoutBtn.onclick=()=>signOut(auth);
 
-/* AUTH */
+// AUTH
 onAuthStateChanged(auth,user=>{
 if(user && allowedUsers[user.email]){
 loginDiv.style.display="none";
 mainDiv.style.display="block";
 navBar.style.display="flex";
 
-/* ONLINE STATUS UPDATE */
-setDoc(doc(db,"status",user.uid),{email:user.email,online:true});
-
-setInterval(()=>{
-if(auth.currentUser){
-setDoc(doc(db,"status",auth.currentUser.uid),{
-email:auth.currentUser.email,
-online:true
-});
-}
-},5000);
-
 loadChat();
-loadDates();
-loadSecret();
-updateDashboard();
 
 }else{
 loginDiv.style.display="block";
@@ -211,168 +202,40 @@ navBar.style.display="none";
 }
 });
 
-/* OFFLINE */
-window.addEventListener("beforeunload", async ()=>{
-if(auth.currentUser){
-await setDoc(doc(db,"status",auth.currentUser.uid),{
-email:auth.currentUser.email,
-online:false
-});
-}
-});
+// ✅ FIXED CHAT (NO DUPLICATE)
+sendBtn.onclick = null;
+sendBtn.onclick = async () => {
+  if (messageInput.value === "") return;
 
-/* ONLINE STATUS */
-onSnapshot(collection(db,"status"),snap=>{
-if(!auth.currentUser) return;
-let online=false;
-snap.forEach(d=>{
-if(d.data().email!==auth.currentUser.email && d.data().online){
-online=true;
-}
-});
-onlineStatus.innerHTML=online?"🟢 Soulmate Online":"🔴 Soulmate Offline";
-window.bothOnline=online;
-});
+  sendBtn.disabled = true;
 
-/* DASHBOARD */
-const myBirthday=new Date("2005-02-19");
-const herBirthday=new Date("2004-12-07");
-const anniversary=new Date("2023-11-25");
+  await addDoc(collection(db,"messages"),{
+    text:messageInput.value,
+    email:auth.currentUser.email,
+    name:allowedUsers[auth.currentUser.email],
+    time:Date.now(),
+    seen:false
+  });
 
-function daysLeft(date){
-let now=new Date();
-let next=new Date(now.getFullYear(),date.getMonth(),date.getDate());
-if(next<now) next.setFullYear(now.getFullYear()+1);
-return Math.ceil((next-now)/(1000*60*60*24));
-}
-
-function updateDashboard(){
-birthday.innerHTML=`Kumaraswamy: ${daysLeft(myBirthday)} days<br>
-Pooja: ${daysLeft(herBirthday)} days`;
-
-anniversaryText.innerHTML=`${daysLeft(anniversary)} days left`;
-
-let days=Math.floor((new Date()-anniversary)/(1000*60*60*24));
-daysTogether.innerHTML=`${days} days`;
-}
-
-/* CHAT */
-sendBtn.onclick=async()=>{
-if(messageInput.value==="") return;
-
-await addDoc(collection(db,"messages"),{
-text:messageInput.value,
-email:auth.currentUser.email,
-name:allowedUsers[auth.currentUser.email],
-time:Date.now(),
-seen:false
-});
-
-messageInput.value="";
+  messageInput.value="";
+  sendBtn.disabled=false;
 };
+
+// ENTER KEY
+messageInput.addEventListener("keypress", e=>{
+if(e.key==="Enter") sendBtn.click();
+});
 
 function loadChat(){
-if(chatListener) return;
-
-chatListener=onSnapshot(query(collection(db,"messages"),orderBy("time")),async snap=>{
+onSnapshot(query(collection(db,"messages"),orderBy("time")),snap=>{
 chatBox.innerHTML="";
-
-for(const d of snap.docs){
+snap.forEach(d=>{
 let m=d.data();
-
-if(m.email!==auth.currentUser.email && !m.seen){
-await updateDoc(doc(db,"messages",d.id),{seen:true});
-}
-
-chatBox.innerHTML+=`
-<div class="chatMsg">
-<b>${m.name}:</b> ${m.text}
-${m.email===auth.currentUser.email?(m.seen?" ✅✅":" ✅"):""}
-${m.email===auth.currentUser.email?
-`<button onclick="deleteMessage('${d.id}')">🗑</button>`:""}
-</div>`;
-}
-
-chatBox.scrollTop=chatBox.scrollHeight;
-});
-}
-
-window.deleteMessage=id=>deleteDoc(doc(db,"messages",id));
-
-/* DATES */
-window.addEvent=async()=>{
-if(eventTitle.value===""||eventDate.value==="") return;
-
-await addDoc(collection(db,"dates"),{
-title:eventTitle.value,
-date:eventDate.value
-});
-
-eventTitle.value="";
-eventDate.value="";
-};
-
-function loadDates(){
-onSnapshot(collection(db,"dates"),snap=>{
-eventList.innerHTML="";
-snap.forEach(d=>{
-let data=d.data();
-
-let diff=new Date(data.date)-new Date();
-let days=Math.ceil(diff/(1000*60*60*24));
-if(days<0) days="Completed 🎉";
-
-eventList.innerHTML+=`
-<p>${data.title} - ${data.date} (${days})
-<button onclick="deleteDate('${d.id}')">🗑</button>
-</p>`;
+chatBox.innerHTML+=`<div class="chatMsg"><b>${m.name}:</b> ${m.text}</div>`;
 });
 });
 }
 
-window.deleteDate=id=>deleteDoc(doc(db,"dates",id));
-
-/* SECRET */
-window.addSecret=async()=>{
-if(secretInput.value==="") return;
-
-await addDoc(collection(db,"secret"),{
-text:secretInput.value
-});
-
-secretInput.value="";
-};
-
-function loadSecret(){
-onSnapshot(collection(db,"secret"),snap=>{
-secretList.innerHTML="";
-snap.forEach(d=>{
-secretList.innerHTML+=`<p>💌 ${d.data().text}</p>`;
-});
-});
-}
-
-/* ULTRA CELEBRATION */
-window.cutCake=async()=>{
-if(!window.bothOnline){
-celebrateMsg.innerHTML="Both must be online 💔";
-return;
-}
-
-await setDoc(doc(db,"celebration","cake"),{
-time:Date.now(),
-by:allowedUsers[auth.currentUser.email]
-});
-};
-
-onSnapshot(doc(db,"celebration","cake"),snap=>{
-if(snap.exists()){
-let data=snap.data();
-celebrateMsg.innerHTML=`🎂 ${data.by} cut the cake 💖🎉`;
-}
-});
-
-/* NAV */
 window.showSection=id=>{
 document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
 document.getElementById(id).classList.add("active");
