@@ -21,7 +21,6 @@ body{
   margin:10px;
   padding:15px;
   border-radius:15px;
-  box-shadow:0 5px 15px rgba(0,0,0,0.2);
 }
 input,button{
   padding:8px;
@@ -61,10 +60,10 @@ button{
 .bottomNav button{
   background:white;
   color:#ff4d6d;
-  font-weight:bold;
 }
 </style>
 </head>
+
 <body>
 
 <h2>💖 NoteSync 💖</h2>
@@ -101,32 +100,8 @@ button{
 
 <div id="chat" class="section">
 <div id="chatBox"></div>
-<input type="text" id="messageInput" placeholder="Type message">
+<input type="text" id="messageInput">
 <button id="sendBtn">Send</button>
-</div>
-
-<div id="dates" class="section">
-<div class="card">
-<input type="text" id="eventTitle" placeholder="Event Name">
-<input type="date" id="eventDate">
-<button onclick="addEvent()">Add</button>
-<div id="eventList"></div>
-</div>
-</div>
-
-<div id="celebration" class="section">
-<div class="card">
-<button onclick="cutCake()">🎂 Cut Cake</button>
-<p id="celebrateMsg"></p>
-</div>
-</div>
-
-<div id="secret" class="section">
-<div class="card">
-<input type="text" id="secretInput" placeholder="Write secret message">
-<button onclick="addSecret()">Save</button>
-<div id="secretList"></div>
-</div>
 </div>
 
 </div>
@@ -134,9 +109,6 @@ button{
 <div class="bottomNav" id="navBar" style="display:none;">
 <button onclick="showSection('home')">🏠</button>
 <button onclick="showSection('chat')">💬</button>
-<button onclick="showSection('dates')">📅</button>
-<button onclick="showSection('celebration')">🎉</button>
-<button onclick="showSection('secret')">💌</button>
 <button id="logoutBtn">🚪</button>
 </div>
 
@@ -144,22 +116,19 @@ button{
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
 const firebaseConfig = {
-apiKey:"AIzaSy...",
-authDomain:"notesync-5e7ed.firebaseapp.com",
-projectId:"notesync-5e7ed",
-storageBucket:"notesync-5e7ed.firebasestorage.app",
-messagingSenderId:"486342879531",
-appId:"1:486342879531:web:76ed522f873d1ecca67d6e"
+  apiKey: "AIzaSyDEl579k9r9NxIVss_QtQTNLoa25CGGSbI",
+  authDomain: "notesync-5e7ed.firebaseapp.com",
+  projectId: "notesync-5e7ed",
 };
 
-const app=initializeApp(firebaseConfig);
-const auth=getAuth();
-const db=getFirestore();
+const app = initializeApp(firebaseConfig);
+const auth = getAuth();
+const db = getFirestore();
 
-// ✅ FIX: connect elements
+// CONNECT ELEMENTS
 const loginBtn = document.getElementById("loginBtn");
 const logoutBtn = document.getElementById("logoutBtn");
 const email = document.getElementById("email");
@@ -170,77 +139,80 @@ const navBar = document.getElementById("navBar");
 const chatBox = document.getElementById("chatBox");
 const messageInput = document.getElementById("messageInput");
 const sendBtn = document.getElementById("sendBtn");
-const onlineStatus = document.getElementById("onlineStatus");
 
-const allowedUsers={
-"kumaraswamyd2005@gmail.com":"Kumaraswamy 💙",
-"poojaprasanna089@gmail.com":"Pooja 💖"
-};
+const birthday = document.getElementById("birthday");
+const anniversaryText = document.getElementById("anniversaryText");
+const daysTogether = document.getElementById("daysTogether");
 
 // LOGIN
-loginBtn.onclick=async()=>{
-try{
-await signInWithEmailAndPassword(auth,email.value,password.value);
-}catch(e){alert(e.message);}
+loginBtn.onclick = async () => {
+  try {
+    await signInWithEmailAndPassword(auth, email.value, password.value);
+  } catch (e) {
+    alert(e.message);
+  }
 };
 
-logoutBtn.onclick=()=>signOut(auth);
+logoutBtn.onclick = () => signOut(auth);
 
 // AUTH
-onAuthStateChanged(auth,user=>{
-if(user && allowedUsers[user.email]){
-loginDiv.style.display="none";
-mainDiv.style.display="block";
-navBar.style.display="flex";
-
-loadChat();
-
-}else{
-loginDiv.style.display="block";
-mainDiv.style.display="none";
-navBar.style.display="none";
-}
+onAuthStateChanged(auth, user => {
+  if (user) {
+    loginDiv.style.display = "none";
+    mainDiv.style.display = "block";
+    navBar.style.display = "flex";
+    loadChat();
+    updateDashboard();
+  } else {
+    loginDiv.style.display = "block";
+    mainDiv.style.display = "none";
+    navBar.style.display = "none";
+  }
 });
 
-// ✅ FIXED CHAT (NO DUPLICATE)
-sendBtn.onclick = null;
+// DASHBOARD
+const anniversary = new Date("2023-11-25");
+
+function updateDashboard(){
+  let days = Math.floor((new Date()-anniversary)/(1000*60*60*24));
+  daysTogether.innerHTML = `${days} days`;
+}
+
+// CHAT FIXED
 sendBtn.onclick = async () => {
-  if (messageInput.value === "") return;
+  if (!messageInput.value) return;
 
   sendBtn.disabled = true;
 
   await addDoc(collection(db,"messages"),{
-    text:messageInput.value,
-    email:auth.currentUser.email,
-    name:allowedUsers[auth.currentUser.email],
-    time:Date.now(),
-    seen:false
+    text: messageInput.value,
+    time: Date.now()
   });
 
   messageInput.value="";
   sendBtn.disabled=false;
 };
 
-// ENTER KEY
 messageInput.addEventListener("keypress", e=>{
-if(e.key==="Enter") sendBtn.click();
+  if(e.key==="Enter") sendBtn.click();
 });
 
 function loadChat(){
-onSnapshot(query(collection(db,"messages"),orderBy("time")),snap=>{
-chatBox.innerHTML="";
-snap.forEach(d=>{
-let m=d.data();
-chatBox.innerHTML+=`<div class="chatMsg"><b>${m.name}:</b> ${m.text}</div>`;
-});
-});
+  onSnapshot(query(collection(db,"messages"),orderBy("time")), snap=>{
+    chatBox.innerHTML="";
+    snap.forEach(doc=>{
+      chatBox.innerHTML += `<div class="chatMsg">${doc.data().text}</div>`;
+    });
+  });
 }
 
+// NAV
 window.showSection=id=>{
-document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
-document.getElementById(id).classList.add("active");
+  document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
 };
 
 </script>
+
 </body>
 </html>
