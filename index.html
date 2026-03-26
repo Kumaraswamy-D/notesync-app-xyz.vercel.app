@@ -25,7 +25,7 @@ body{
 }
 
 #chatBox{
-  height:300px;
+  height:250px;
   overflow-y:auto;
   background:white;
   color:black;
@@ -34,22 +34,21 @@ body{
   text-align:left;
 }
 
-/* 💬 chat bubbles */
 .me{
-  text-align:right;
   background:#ff4d6d;
   color:white;
   padding:8px;
   border-radius:10px;
   margin:5px;
+  text-align:right;
 }
 
 .other{
-  text-align:left;
   background:#eee;
   padding:8px;
   border-radius:10px;
   margin:5px;
+  text-align:left;
 }
 
 .bottomNav{
@@ -83,23 +82,64 @@ button{
 
 <div id="mainDiv" style="display:none;padding-bottom:70px;">
 
-<div id="chat" class="section active">
+<!-- HOME -->
+<div id="home" class="section active">
+<div class="card">
+<h2>💙 Kumaraswamy ❤️ Pooja 💖</h2>
+<p id="onlineStatus"></p>
+</div>
+</div>
+
+<!-- CHAT -->
+<div id="chat" class="section">
 <div id="chatBox"></div>
 <input type="text" id="messageInput" placeholder="Type message">
 <button id="sendBtn">Send</button>
 </div>
 
+<!-- DATES -->
+<div id="dates" class="section">
+<div class="card">
+<input type="text" id="eventTitle" placeholder="Event">
+<input type="date" id="eventDate">
+<button onclick="addEvent()">Add</button>
+<div id="eventList"></div>
+</div>
+</div>
+
+<!-- CELEBRATION -->
+<div id="celebration" class="section">
+<div class="card">
+<button onclick="cutCake()">🎂 Cut Cake</button>
+<p id="celebrateMsg"></p>
+</div>
+</div>
+
+<!-- SECRET -->
+<div id="secret" class="section">
+<div class="card">
+<input type="text" id="secretInput">
+<button onclick="addSecret()">Save</button>
+<div id="secretList"></div>
+</div>
+</div>
+
 </div>
 
 <div class="bottomNav" id="navBar" style="display:none;">
-<button id="logoutBtn">Logout</button>
+<button onclick="showSection('home')">🏠</button>
+<button onclick="showSection('chat')">💬</button>
+<button onclick="showSection('dates')">📅</button>
+<button onclick="showSection('celebration')">🎉</button>
+<button onclick="showSection('secret')">💌</button>
+<button id="logoutBtn">🚪</button>
 </div>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDEl579k9r9NxIVss_QtQTNLoa25CGGSbI",
@@ -115,87 +155,203 @@ const auth = getAuth();
 const db = getFirestore();
 
 // USERS
-const users = {
-  "kumaraswamyd2005@gmail.com": "Kumaraswamy 💙",
-  "poojaprasanna089@gmail.com": "Pooja 💖"
+const users={
+"kumaraswamyd2005@gmail.com":"Kumaraswamy 💙",
+"poojaprasanna089@gmail.com":"Pooja 💖"
 };
 
 // ELEMENTS
-const loginBtn = document.getElementById("loginBtn");
-const logoutBtn = document.getElementById("logoutBtn");
-const email = document.getElementById("email");
-const password = document.getElementById("password");
-const loginDiv = document.getElementById("loginDiv");
-const mainDiv = document.getElementById("mainDiv");
-const navBar = document.getElementById("navBar");
-const chatBox = document.getElementById("chatBox");
-const messageInput = document.getElementById("messageInput");
-const sendBtn = document.getElementById("sendBtn");
+const loginBtn=document.getElementById("loginBtn");
+const logoutBtn=document.getElementById("logoutBtn");
+const email=document.getElementById("email");
+const password=document.getElementById("password");
+const loginDiv=document.getElementById("loginDiv");
+const mainDiv=document.getElementById("mainDiv");
+const navBar=document.getElementById("navBar");
+
+const chatBox=document.getElementById("chatBox");
+const messageInput=document.getElementById("messageInput");
+const sendBtn=document.getElementById("sendBtn");
+
+const onlineStatus=document.getElementById("onlineStatus");
+const eventTitle=document.getElementById("eventTitle");
+const eventDate=document.getElementById("eventDate");
+const eventList=document.getElementById("eventList");
+
+const secretInput=document.getElementById("secretInput");
+const secretList=document.getElementById("secretList");
+const celebrateMsg=document.getElementById("celebrateMsg");
 
 // LOGIN
-loginBtn.onclick = async ()=>{
-  try{
-    await signInWithEmailAndPassword(auth,email.value,password.value);
-  }catch(e){
-    alert(e.message);
-  }
+loginBtn.onclick=async()=>{
+  await signInWithEmailAndPassword(auth,email.value,password.value);
 };
 
-// LOGOUT
-logoutBtn.onclick = ()=> signOut(auth);
+logoutBtn.onclick=()=>signOut(auth);
 
-// AUTH STATE
+// AUTH
 onAuthStateChanged(auth,user=>{
-  if(user){
-    loginDiv.style.display="none";
-    mainDiv.style.display="block";
-    navBar.style.display="flex";
-    loadChat();
-  }else{
-    loginDiv.style.display="block";
-  }
+if(user){
+loginDiv.style.display="none";
+mainDiv.style.display="block";
+navBar.style.display="flex";
+
+// ONLINE STATUS
+setDoc(doc(db,"status",user.uid),{email:user.email,online:true});
+
+setInterval(()=>{
+if(auth.currentUser){
+setDoc(doc(db,"status",auth.currentUser.uid),{
+email:auth.currentUser.email,
+online:true
+});
+}
+},5000);
+
+loadChat();
+loadDates();
+loadSecret();
+
+}else{
+loginDiv.style.display="block";
+}
 });
 
-// SEND MESSAGE
-sendBtn.onclick = async ()=>{
-  if(!messageInput.value) return;
+// OFFLINE
+window.addEventListener("beforeunload", async ()=>{
+if(auth.currentUser){
+await setDoc(doc(db,"status",auth.currentUser.uid),{
+email:auth.currentUser.email,
+online:false
+});
+}
+});
 
-  await addDoc(collection(db,"messages"),{
-    text: messageInput.value,
-    email: auth.currentUser.email,
-    name: users[auth.currentUser.email] || "Unknown",
-    time: serverTimestamp()
-  });
+// SHOW ONLINE
+onSnapshot(collection(db,"status"),snap=>{
+if(!auth.currentUser) return;
 
-  messageInput.value="";
+let online=false;
+
+snap.forEach(d=>{
+if(d.data().email!==auth.currentUser.email && d.data().online){
+online=true;
+}
+});
+
+onlineStatus.innerHTML=online?"🟢 Soulmate Online":"🔴 Soulmate Offline";
+window.bothOnline=online;
+});
+
+// CHAT
+sendBtn.onclick=async()=>{
+if(!messageInput.value) return;
+
+await addDoc(collection(db,"messages"),{
+text:messageInput.value,
+email:auth.currentUser.email,
+name:users[auth.currentUser.email] || "Unknown",
+time:serverTimestamp(),
+seen:false
+});
+
+messageInput.value="";
 };
 
-// ENTER KEY
-messageInput.addEventListener("keypress", e=>{
-  if(e.key==="Enter") sendBtn.click();
+function loadChat(){
+onSnapshot(query(collection(db,"messages"),orderBy("time","asc")),snap=>{
+chatBox.innerHTML="";
+
+snap.forEach(async d=>{
+let m=d.data();
+
+// mark seen
+if(m.email!==auth.currentUser.email && !m.seen){
+await updateDoc(doc(db,"messages",d.id),{seen:true});
+}
+
+let cls=(m.email===auth.currentUser.email)?"me":"other";
+
+chatBox.innerHTML+=`
+<div class="${cls}">
+<b>${m.name}</b><br>
+${m.text}
+${m.email===auth.currentUser.email ? (m.seen?" ✔✔":" ✔") : ""}
+</div>`;
 });
 
-// LOAD CHAT
-function loadChat(){
-  onSnapshot(query(collection(db,"messages"),orderBy("time","asc")), snap=>{
-    chatBox.innerHTML="";
-
-    snap.forEach(doc=>{
-      let m = doc.data();
-
-      let cls = (m.email === auth.currentUser.email) ? "me" : "other";
-
-      chatBox.innerHTML += `
-        <div class="${cls}">
-          <b>${m.name}</b><br>
-          ${m.text}
-        </div>
-      `;
-    });
-
-    chatBox.scrollTop = chatBox.scrollHeight;
-  });
+chatBox.scrollTop=chatBox.scrollHeight;
+});
 }
+
+// DATES
+window.addEvent=async()=>{
+if(!eventTitle.value || !eventDate.value) return;
+
+await addDoc(collection(db,"dates"),{
+title:eventTitle.value,
+date:eventDate.value
+});
+
+eventTitle.value="";
+eventDate.value="";
+};
+
+function loadDates(){
+onSnapshot(collection(db,"dates"),snap=>{
+eventList.innerHTML="";
+snap.forEach(d=>{
+let data=d.data();
+eventList.innerHTML+=`<p>${data.title} - ${data.date}</p>`;
+});
+});
+}
+
+// SECRET
+window.addSecret=async()=>{
+if(!secretInput.value) return;
+
+await addDoc(collection(db,"secret"),{
+text:secretInput.value
+});
+
+secretInput.value="";
+};
+
+function loadSecret(){
+onSnapshot(collection(db,"secret"),snap=>{
+secretList.innerHTML="";
+snap.forEach(d=>{
+secretList.innerHTML+=`<p>💌 ${d.data().text}</p>`;
+});
+});
+}
+
+// CELEBRATION
+window.cutCake=async()=>{
+if(!window.bothOnline){
+celebrateMsg.innerHTML="Both must be online 💔";
+return;
+}
+
+await setDoc(doc(db,"celebration","cake"),{
+time:Date.now(),
+by:users[auth.currentUser.email]
+});
+};
+
+onSnapshot(doc(db,"celebration","cake"),snap=>{
+if(snap.exists()){
+let data=snap.data();
+celebrateMsg.innerHTML=`🎂 ${data.by} cut the cake 💖🎉`;
+}
+});
+
+// NAV
+window.showSection=id=>{
+document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
+document.getElementById(id).classList.add("active");
+};
 
 </script>
 
