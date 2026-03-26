@@ -82,7 +82,6 @@ button{
 
 <div id="mainDiv" style="display:none;padding-bottom:70px;">
 
-<!-- HOME -->
 <div id="home" class="section active">
 <div class="card">
 <h2>💙 Kumaraswamy ❤️ Pooja 💖</h2>
@@ -90,14 +89,12 @@ button{
 </div>
 </div>
 
-<!-- CHAT -->
 <div id="chat" class="section">
 <div id="chatBox"></div>
 <input type="text" id="messageInput" placeholder="Type message">
 <button id="sendBtn">Send</button>
 </div>
 
-<!-- DATES -->
 <div id="dates" class="section">
 <div class="card">
 <input type="text" id="eventTitle" placeholder="Event">
@@ -107,7 +104,6 @@ button{
 </div>
 </div>
 
-<!-- CELEBRATION -->
 <div id="celebration" class="section">
 <div class="card">
 <button onclick="cutCake()">🎂 Cut Cake</button>
@@ -115,7 +111,6 @@ button{
 </div>
 </div>
 
-<!-- SECRET -->
 <div id="secret" class="section">
 <div class="card">
 <input type="text" id="secretInput">
@@ -139,22 +134,18 @@ button{
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDEl579k9r9NxIVss_QtQTNLoa25CGGSbI",
-  authDomain: "notesync-5e7ed.firebaseapp.com",
-  projectId: "notesync-5e7ed",
-  storageBucket: "notesync-5e7ed.firebasestorage.app",
-  messagingSenderId: "486342879531",
-  appId: "1:486342879531:web:76ed522f873d1ecca67d6e"
+  apiKey: "YOUR_API_KEY_HERE",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID"
 };
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth();
 const db = getFirestore();
 
-// USERS
 const users={
 "kumaraswamyd2005@gmail.com":"Kumaraswamy 💙",
 "poojaprasanna089@gmail.com":"Pooja 💖"
@@ -172,19 +163,15 @@ const navBar=document.getElementById("navBar");
 const chatBox=document.getElementById("chatBox");
 const messageInput=document.getElementById("messageInput");
 const sendBtn=document.getElementById("sendBtn");
-
 const onlineStatus=document.getElementById("onlineStatus");
-const eventTitle=document.getElementById("eventTitle");
-const eventDate=document.getElementById("eventDate");
-const eventList=document.getElementById("eventList");
 
-const secretInput=document.getElementById("secretInput");
-const secretList=document.getElementById("secretList");
-const celebrateMsg=document.getElementById("celebrateMsg");
+let chatLoaded=false;
 
 // LOGIN
 loginBtn.onclick=async()=>{
-  await signInWithEmailAndPassword(auth,email.value,password.value);
+try{
+await signInWithEmailAndPassword(auth,email.value,password.value);
+}catch(e){alert(e.message);}
 };
 
 logoutBtn.onclick=()=>signOut(auth);
@@ -196,56 +183,38 @@ loginDiv.style.display="none";
 mainDiv.style.display="block";
 navBar.style.display="flex";
 
-// ONLINE STATUS
 setDoc(doc(db,"status",user.uid),{email:user.email,online:true});
 
-setInterval(()=>{
-if(auth.currentUser){
-setDoc(doc(db,"status",auth.currentUser.uid),{
-email:auth.currentUser.email,
-online:true
-});
-}
-},5000);
-
+if(!chatLoaded){
 loadChat();
-loadDates();
-loadSecret();
+chatLoaded=true;
+}
 
 }else{
 loginDiv.style.display="block";
+mainDiv.style.display="none";
+navBar.style.display="none";
 }
 });
 
-// OFFLINE
-window.addEventListener("beforeunload", async ()=>{
-if(auth.currentUser){
-await setDoc(doc(db,"status",auth.currentUser.uid),{
-email:auth.currentUser.email,
-online:false
-});
-}
-});
-
-// SHOW ONLINE
+// ONLINE STATUS
 onSnapshot(collection(db,"status"),snap=>{
 if(!auth.currentUser) return;
 
 let online=false;
-
 snap.forEach(d=>{
 if(d.data().email!==auth.currentUser.email && d.data().online){
 online=true;
 }
 });
-
-onlineStatus.innerHTML=online?"🟢 Soulmate Online":"🔴 Soulmate Offline";
-window.bothOnline=online;
+onlineStatus.innerHTML=online?"🟢 Online":"🔴 Offline";
 });
 
-// CHAT
+// SEND MESSAGE (FIXED NO DUPLICATE)
 sendBtn.onclick=async()=>{
-if(!messageInput.value) return;
+if(!messageInput.value.trim()) return;
+
+sendBtn.disabled=true;
 
 await addDoc(collection(db,"messages"),{
 text:messageInput.value,
@@ -256,96 +225,40 @@ seen:false
 });
 
 messageInput.value="";
+sendBtn.disabled=false;
 };
 
+// LOAD CHAT (FIXED)
 function loadChat(){
-onSnapshot(query(collection(db,"messages"),orderBy("time","asc")),snap=>{
+onSnapshot(query(collection(db,"messages"),orderBy("time")),snap=>{
+
 chatBox.innerHTML="";
 
-snap.forEach(async d=>{
+snap.docs.forEach(d=>{
 let m=d.data();
+
+let cls = m.email===auth.currentUser.email ? "me":"other";
+
+let tick="";
+if(m.email===auth.currentUser.email){
+tick = m.seen ? " ✔✔":" ✔";
+}
 
 // mark seen
 if(m.email!==auth.currentUser.email && !m.seen){
-await updateDoc(doc(db,"messages",d.id),{seen:true});
+updateDoc(doc(db,"messages",d.id),{seen:true});
 }
-
-let cls=(m.email===auth.currentUser.email)?"me":"other";
 
 chatBox.innerHTML+=`
 <div class="${cls}">
 <b>${m.name}</b><br>
-${m.text}
-${m.email===auth.currentUser.email ? (m.seen?" ✔✔":" ✔") : ""}
+${m.text} ${tick}
 </div>`;
 });
 
 chatBox.scrollTop=chatBox.scrollHeight;
 });
 }
-
-// DATES
-window.addEvent=async()=>{
-if(!eventTitle.value || !eventDate.value) return;
-
-await addDoc(collection(db,"dates"),{
-title:eventTitle.value,
-date:eventDate.value
-});
-
-eventTitle.value="";
-eventDate.value="";
-};
-
-function loadDates(){
-onSnapshot(collection(db,"dates"),snap=>{
-eventList.innerHTML="";
-snap.forEach(d=>{
-let data=d.data();
-eventList.innerHTML+=`<p>${data.title} - ${data.date}</p>`;
-});
-});
-}
-
-// SECRET
-window.addSecret=async()=>{
-if(!secretInput.value) return;
-
-await addDoc(collection(db,"secret"),{
-text:secretInput.value
-});
-
-secretInput.value="";
-};
-
-function loadSecret(){
-onSnapshot(collection(db,"secret"),snap=>{
-secretList.innerHTML="";
-snap.forEach(d=>{
-secretList.innerHTML+=`<p>💌 ${d.data().text}</p>`;
-});
-});
-}
-
-// CELEBRATION
-window.cutCake=async()=>{
-if(!window.bothOnline){
-celebrateMsg.innerHTML="Both must be online 💔";
-return;
-}
-
-await setDoc(doc(db,"celebration","cake"),{
-time:Date.now(),
-by:users[auth.currentUser.email]
-});
-};
-
-onSnapshot(doc(db,"celebration","cake"),snap=>{
-if(snap.exists()){
-let data=snap.data();
-celebrateMsg.innerHTML=`🎂 ${data.by} cut the cake 💖🎉`;
-}
-});
 
 // NAV
 window.showSection=id=>{
