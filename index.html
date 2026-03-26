@@ -43,6 +43,12 @@ button{
   border-radius:10px;
   text-align:left;
 }
+.chatMsg{
+  background:#ffe0e6;
+  padding:8px;
+  border-radius:8px;
+  margin:5px 0;
+}
 .bottomNav{
   position:fixed;
   bottom:0;
@@ -164,8 +170,6 @@ const allowedUsers={
 };
 
 let chatListener=null;
-let dateListener=null;
-let secretListener=null;
 
 /* LOGIN */
 loginBtn.onclick=async()=>{
@@ -183,10 +187,17 @@ loginDiv.style.display="none";
 mainDiv.style.display="block";
 navBar.style.display="flex";
 
-setDoc(doc(db,"status",user.uid),{
-email:user.email,
+/* ONLINE STATUS UPDATE */
+setDoc(doc(db,"status",user.uid),{email:user.email,online:true});
+
+setInterval(()=>{
+if(auth.currentUser){
+setDoc(doc(db,"status",auth.currentUser.uid),{
+email:auth.currentUser.email,
 online:true
 });
+}
+},5000);
 
 loadChat();
 loadDates();
@@ -200,7 +211,7 @@ navBar.style.display="none";
 }
 });
 
-/* AUTO OFFLINE */
+/* OFFLINE */
 window.addEventListener("beforeunload", async ()=>{
 if(auth.currentUser){
 await setDoc(doc(db,"status",auth.currentUser.uid),{
@@ -236,8 +247,7 @@ return Math.ceil((next-now)/(1000*60*60*24));
 }
 
 function updateDashboard(){
-birthday.innerHTML=
-`Kumaraswamy: ${daysLeft(myBirthday)} days<br>
+birthday.innerHTML=`Kumaraswamy: ${daysLeft(myBirthday)} days<br>
 Pooja: ${daysLeft(herBirthday)} days`;
 
 anniversaryText.innerHTML=`${daysLeft(anniversary)} days left`;
@@ -249,64 +259,71 @@ daysTogether.innerHTML=`${days} days`;
 /* CHAT */
 sendBtn.onclick=async()=>{
 if(messageInput.value==="") return;
+
 await addDoc(collection(db,"messages"),{
 text:messageInput.value,
 email:auth.currentUser.email,
-name:allowedUsers[auth.currentUser.email] || auth.currentUser.email,
+name:allowedUsers[auth.currentUser.email],
 time:Date.now(),
 seen:false
 });
+
 messageInput.value="";
 };
 
 function loadChat(){
 if(chatListener) return;
 
-chatListener=onSnapshot(
-query(collection(db,"messages"),orderBy("time")),
-async snap=>{
+chatListener=onSnapshot(query(collection(db,"messages"),orderBy("time")),async snap=>{
 chatBox.innerHTML="";
+
 for(const d of snap.docs){
 let m=d.data();
 
-if(auth.currentUser && m.email!==auth.currentUser.email && !m.seen){
+if(m.email!==auth.currentUser.email && !m.seen){
 await updateDoc(doc(db,"messages",d.id),{seen:true});
 }
 
 chatBox.innerHTML+=`
-<p>
+<div class="chatMsg">
 <b>${m.name}:</b> ${m.text}
 ${m.email===auth.currentUser.email?(m.seen?" ✅✅":" ✅"):""}
 ${m.email===auth.currentUser.email?
 `<button onclick="deleteMessage('${d.id}')">🗑</button>`:""}
-</p>`;
+</div>`;
 }
+
 chatBox.scrollTop=chatBox.scrollHeight;
 });
 }
 
 window.deleteMessage=id=>deleteDoc(doc(db,"messages",id));
 
-/* IMPORTANT DATES */
+/* DATES */
 window.addEvent=async()=>{
 if(eventTitle.value===""||eventDate.value==="") return;
+
 await addDoc(collection(db,"dates"),{
 title:eventTitle.value,
 date:eventDate.value
 });
-eventTitle.value="";eventDate.value="";
+
+eventTitle.value="";
+eventDate.value="";
 };
 
 function loadDates(){
-if(dateListener) return;
-
-dateListener=onSnapshot(collection(db,"dates"),snap=>{
+onSnapshot(collection(db,"dates"),snap=>{
 eventList.innerHTML="";
 snap.forEach(d=>{
 let data=d.data();
-let days=Math.ceil((new Date(data.date)-new Date())/(1000*60*60*24));
+
+let diff=new Date(data.date)-new Date();
+let days=Math.ceil(diff/(1000*60*60*24));
+if(days<0) days="Completed 🎉";
+
 eventList.innerHTML+=`
-<p>${data.title} - ${data.date} (${days} days left)
+<p>${data.title} - ${data.date} (${days})
 <button onclick="deleteDate('${d.id}')">🗑</button>
 </p>`;
 });
@@ -318,14 +335,16 @@ window.deleteDate=id=>deleteDoc(doc(db,"dates",id));
 /* SECRET */
 window.addSecret=async()=>{
 if(secretInput.value==="") return;
-await addDoc(collection(db,"secret"),{text:secretInput.value});
+
+await addDoc(collection(db,"secret"),{
+text:secretInput.value
+});
+
 secretInput.value="";
 };
 
 function loadSecret(){
-if(secretListener) return;
-
-secretListener=onSnapshot(collection(db,"secret"),snap=>{
+onSnapshot(collection(db,"secret"),snap=>{
 secretList.innerHTML="";
 snap.forEach(d=>{
 secretList.innerHTML+=`<p>💌 ${d.data().text}</p>`;
@@ -339,18 +358,21 @@ if(!window.bothOnline){
 celebrateMsg.innerHTML="Both must be online 💔";
 return;
 }
+
 await setDoc(doc(db,"celebration","cake"),{
-time:Date.now()
+time:Date.now(),
+by:allowedUsers[auth.currentUser.email]
 });
 };
 
 onSnapshot(doc(db,"celebration","cake"),snap=>{
 if(snap.exists()){
-celebrateMsg.innerHTML="🎂💖 ULTRA CELEBRATION MODE ACTIVATED 💖🎉";
+let data=snap.data();
+celebrateMsg.innerHTML=`🎂 ${data.by} cut the cake 💖🎉`;
 }
 });
 
-/* NAVIGATION */
+/* NAV */
 window.showSection=id=>{
 document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
 document.getElementById(id).classList.add("active");
