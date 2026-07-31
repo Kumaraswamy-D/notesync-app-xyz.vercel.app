@@ -1,139 +1,368 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Bro-Sis</title>
+<title>Chat With Friend</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body{
-  margin:0;
-  font-family:Arial;
-  background:linear-gradient(135deg,#ff758c,#ff7eb3);
-  text-align:center;
-  color:white;
-}
-.section{display:none;padding:15px;}
-.active{display:block;}
+  :root{
+    --bg1:#ff758c;
+    --bg2:#ff7eb3;
+    --card-bg:#ffffff;
+    --card-fg:#1a1a1a;
+    --accent:#ff4d6d;
+    --accent-fg:#ffffff;
+    --me-bg:#ff4d6d;
+    --me-fg:#ffffff;
+    --other-bg:#f1f1f4;
+    --other-fg:#1a1a1a;
+    --muted:#8a8a8a;
+    --input-bg:#ffffff;
+    --input-fg:#1a1a1a;
+    --input-border:#e0e0e0;
+    --font: Arial, Helvetica, sans-serif;
+  }
 
-.card{
-  background:white;
-  color:black;
-  margin:10px;
-  padding:15px;
-  border-radius:15px;
-}
+  /* ---------- HACKER THEME ---------- */
+  body.theme-hacker{
+    --bg1:#000000;
+    --bg2:#001a00;
+    --card-bg:#0a0f0a;
+    --card-fg:#39ff6a;
+    --accent:#0f0;
+    --accent-fg:#000000;
+    --me-bg:#0f2f13;
+    --me-fg:#39ff6a;
+    --other-bg:#0d1a0d;
+    --other-fg:#39ff6a;
+    --muted:#1f7a1f;
+    --input-bg:#000000;
+    --input-fg:#39ff6a;
+    --input-border:#0f0;
+    --font: "Courier New", monospace;
+  }
+  body.theme-hacker .card, body.theme-hacker .chatBox{
+    border:1px solid #0f0;
+    box-shadow:0 0 12px rgba(0,255,0,0.25);
+  }
+  body.theme-hacker h1, body.theme-hacker h2, body.theme-hacker h3{
+    text-shadow:0 0 6px #0f0;
+  }
 
-#chatBox{
-  height:250px;
-  overflow-y:auto;
-  background:white;
-  color:black;
-  padding:10px;
-  border-radius:10px;
-  text-align:left;
-}
+  /* ---------- LIGHT THEME ---------- */
+  body.theme-light{
+    --bg1:#f4f6fb;
+    --bg2:#eef1f8;
+    --card-bg:#ffffff;
+    --card-fg:#20232a;
+    --accent:#4a7bd9;
+    --accent-fg:#ffffff;
+    --me-bg:#4a7bd9;
+    --me-fg:#ffffff;
+    --other-bg:#eef1f6;
+    --other-fg:#20232a;
+    --muted:#8992a3;
+    --input-bg:#ffffff;
+    --input-fg:#20232a;
+    --input-border:#d7dbe4;
+    --font: Arial, Helvetica, sans-serif;
+  }
+  body.theme-light .card, body.theme-light .chatBox{
+    border:1px solid #e2e5ec;
+    box-shadow:0 2px 10px rgba(0,0,0,0.05);
+  }
 
-.me{
-  background:#ff4d6d;
-  color:white;
-  padding:8px;
-  border-radius:10px;
-  margin:5px;
-  text-align:right;
-}
+  *{box-sizing:border-box;}
 
-.other{
-  background:#eee;
-  padding:8px;
-  border-radius:10px;
-  margin:5px;
-  text-align:left;
-}
+  body{
+    margin:0;
+    font-family:var(--font);
+    background:linear-gradient(135deg,var(--bg1),var(--bg2));
+    min-height:100vh;
+    text-align:center;
+    color:var(--card-fg);
+    transition:background .3s ease;
+  }
 
-.bottomNav{
-  position:fixed;
-  bottom:0;
-  width:100%;
-  background:#ff4d6d;
-  padding:10px;
-  display:flex;
-  justify-content:space-around;
-}
+  .section{display:none;padding:15px;}
+  .active{display:block;}
 
-button{
-  padding:8px;
-  border:none;
-  border-radius:8px;
-  cursor:pointer;
-}
+  .card{
+    background:var(--card-bg);
+    color:var(--card-fg);
+    margin:12px auto;
+    padding:18px;
+    border-radius:15px;
+    max-width:420px;
+  }
+
+  h1,h2,h3{margin:8px 0;}
+
+  input{
+    width:90%;
+    max-width:320px;
+    padding:10px;
+    margin:6px 0;
+    border-radius:8px;
+    border:1px solid var(--input-border);
+    background:var(--input-bg);
+    color:var(--input-fg);
+    font-family:inherit;
+    font-size:15px;
+  }
+
+  button{
+    padding:10px 16px;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    font-weight:bold;
+    font-family:inherit;
+    background:var(--accent);
+    color:var(--accent-fg);
+    margin:6px 4px;
+    font-size:14px;
+    transition:transform .1s ease, opacity .2s ease;
+  }
+  button:hover{opacity:.9;}
+  button:active{transform:scale(.96);}
+  button:disabled{opacity:.5;cursor:not-allowed;}
+
+  .ghost-btn{
+    background:transparent;
+    color:var(--accent);
+    border:1px solid var(--accent);
+  }
+
+  .link-btn{
+    background:none;
+    color:var(--muted);
+    text-decoration:underline;
+    font-weight:normal;
+    font-size:13px;
+    padding:4px;
+  }
+
+  .google-btn{
+    background:#ffffff;
+    color:#33373b;
+    border:1px solid #ddd;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+  }
+
+  .bigChoice{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    max-width:320px;
+    margin:20px auto;
+  }
+  .bigChoice button{
+    padding:20px;
+    font-size:17px;
+    border-radius:14px;
+  }
+
+  #roomCodeDisplay{
+    font-size:26px;
+    letter-spacing:4px;
+    font-weight:bold;
+    margin:10px 0;
+    padding:10px;
+    border:2px dashed var(--accent);
+    border-radius:10px;
+    display:inline-block;
+  }
+
+  .chatBox{
+    height:340px;
+    overflow-y:auto;
+    background:var(--card-bg);
+    color:var(--card-fg);
+    padding:10px;
+    border-radius:10px;
+    text-align:left;
+    max-width:480px;
+    margin:0 auto;
+  }
+
+  .msgRow{display:flex;margin:6px 0;}
+  .msgRow.me{justify-content:flex-end;}
+  .msgRow.other{justify-content:flex-start;}
+
+  .bubble{
+    max-width:75%;
+    padding:8px 12px;
+    border-radius:14px;
+    font-size:14px;
+    word-wrap:break-word;
+  }
+  .bubble .sender{
+    display:block;
+    font-size:11px;
+    opacity:.7;
+    margin-bottom:2px;
+  }
+  .me .bubble{background:var(--me-bg);color:var(--me-fg);border-bottom-right-radius:2px;}
+  .other .bubble{background:var(--other-bg);color:var(--other-fg);border-bottom-left-radius:2px;}
+
+  .chatInputRow{
+    max-width:480px;
+    margin:10px auto 0;
+    display:flex;
+    gap:6px;
+  }
+  .chatInputRow input{flex:1;margin:0;width:auto;}
+
+  .themeBar{
+    position:fixed;
+    top:8px;
+    right:8px;
+    display:flex;
+    gap:6px;
+    z-index:50;
+  }
+  .themeBar button{
+    padding:6px 10px;
+    font-size:12px;
+    margin:0;
+  }
+
+  .topBar{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    max-width:480px;
+    margin:0 auto 6px;
+    flex-wrap:wrap;
+  }
+
+  .muted{color:var(--muted);font-size:13px;}
+
+  .bottomNav{
+    position:fixed;
+    bottom:0;
+    width:100%;
+    background:var(--accent);
+    padding:10px;
+    display:flex;
+    justify-content:space-around;
+  }
+  .bottomNav button{
+    background:transparent;
+    color:var(--accent-fg);
+    font-size:20px;
+  }
 </style>
 </head>
 
 <body>
 
-<h2>Brother Sister</h2>
-
-<div id="loginDiv">
-<input type="email" id="email" placeholder="Email"><br>
-<input type="password" id="password" placeholder="Password"><br>
-<button id="loginBtn">Login</button>
+<div class="themeBar">
+  <button class="ghost-btn" onclick="setTheme('colour')">🎨</button>
+  <button class="ghost-btn" onclick="setTheme('light')">☀️</button>
+  <button class="ghost-btn" onclick="setTheme('hacker')">💻</button>
 </div>
 
+<h1 style="padding-top:50px;">Chat With Friend</h1>
+
+<!-- LOGIN -->
+<div id="loginDiv" class="card">
+  <h2>Sign In</h2>
+  <input type="email" id="email" placeholder="Email">
+  <input type="password" id="password" placeholder="Password">
+  <br>
+  <button id="loginBtn">Login</button>
+  <button id="signupBtn" class="ghost-btn">Create Account</button>
+  <br>
+  <p class="muted">— or —</p>
+  <button id="googleBtn" class="google-btn">
+    <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.4 29.3 35 24 35c-6.1 0-11.2-4.1-13-9.6-.4-1.2-.6-2.5-.6-3.9s.2-2.7.6-3.9C12.8 13.1 17.9 9 24 9c3.1 0 5.9 1.1 8.1 3l6-6C34.6 2.4 29.6 0 24 0 14.6 0 6.5 5.4 2.5 13.3l7 5.4C11.4 13.1 17.2 9 24 9c-6.1 0-11.2 4.1-13 9.6z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.1 18.9 12 24 12c3.1 0 5.9 1.1 8.1 3l6-6C34.6 5.4 29.6 3 24 3 15.8 3 8.7 7.6 5 14.2c.4.2.9.3 1.3.5z"/><path fill="#4CAF50" d="M24 45c5.5 0 10.4-1.9 14.2-5l-6.6-5.4C29.6 36.6 27 37.5 24 37.5c-5.3 0-9.7-3.4-11.3-8.1l-6.8 5.2C9.5 40.7 16.2 45 24 45z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.2-4.3 5.6l6.6 5.4C41.5 35.5 44 30.2 44 24c0-1.2-.1-2.4-.4-3.5z"/></svg>
+    Sign in with Google
+  </button>
+  <p id="loginError" style="color:red;font-size:13px;"></p>
+</div>
+
+<!-- MAIN APP -->
 <div id="mainDiv" style="display:none;padding-bottom:70px;">
 
-<div id="home" class="section active">
-<div class="card">
-<h2>Brother Sister</h2>
-<p id="onlineStatus"></p>
-</div>
-</div>
+  <!-- LOBBY -->
+  <div id="lobby" class="section active">
+    <div class="card">
+      <p class="muted">Signed in as <b id="whoAmI"></b></p>
+      <h2>Chat With Friend</h2>
+      <div class="bigChoice">
+        <button onclick="showSection('createRoom')">➕ Create Room</button>
+        <button onclick="showSection('joinRoom')">🔑 Join Room</button>
+      </div>
+    </div>
+  </div>
 
-<div id="chat" class="section">
-<div id="chatBox"></div>
-<input type="text" id="messageInput" placeholder="Type message">
-<button id="sendBtn">Send</button>
-</div>
+  <!-- CREATE ROOM -->
+  <div id="createRoom" class="section">
+    <div class="card">
+      <h2>Create Room</h2>
+      <button id="genRoomBtn" onclick="createRoom()">Generate Room Code</button>
+      <div id="roomCodeWrap" style="display:none;">
+        <p class="muted">Share this code with your friend:</p>
+        <div id="roomCodeDisplay"></div><br>
+        <button onclick="enterCreatedRoom()">Enter Chat</button>
+      </div>
+      <br>
+      <button class="link-btn" onclick="showSection('lobby')">← Back</button>
+    </div>
+  </div>
 
-<div id="dates" class="section">
-<div class="card">
-<input type="text" id="eventTitle" placeholder="Event">
-<input type="date" id="eventDate">
-<button onclick="addEvent()">Add</button>
-<div id="eventList"></div>
-</div>
-</div>
+  <!-- JOIN ROOM -->
+  <div id="joinRoom" class="section">
+    <div class="card">
+      <h2>Join Room</h2>
+      <input type="text" id="joinCodeInput" placeholder="Enter room code" style="text-transform:uppercase;letter-spacing:3px;text-align:center;">
+      <br>
+      <button onclick="joinRoomByCode()">Join</button>
+      <p id="joinError" style="color:red;font-size:13px;"></p>
+      <br>
+      <button class="link-btn" onclick="showSection('lobby')">← Back</button>
+    </div>
+  </div>
 
-<div id="celebration" class="section">
-<div class="card">
-<button onclick="cutCake()">🎂 Cut Cake</button>
-<p id="celebrateMsg"></p>
-</div>
-</div>
-
-<div id="secret" class="section">
-<div class="card">
-<input type="text" id="secretInput">
-<button onclick="addSecret()">Save</button>
-<div id="secretList"></div>
-</div>
-</div>
+  <!-- CHAT -->
+  <div id="chat" class="section">
+    <div class="topBar">
+      <span class="muted">Room: <b id="currentRoomLabel"></b></span>
+      <button class="ghost-btn" onclick="leaveRoom()">Leave Room</button>
+    </div>
+    <div id="chatBox" class="chatBox"></div>
+    <div class="chatInputRow">
+      <input type="text" id="messageInput" placeholder="Type a message">
+      <button id="sendBtn">Send</button>
+    </div>
+  </div>
 
 </div>
 
 <div class="bottomNav" id="navBar" style="display:none;">
-<button onclick="showSection('home')">🏠</button>
-<button onclick="showSection('chat')">💬</button>
-
-<button id="logoutBtn">🚪</button>
+  <button onclick="showSection('lobby')">🏠</button>
+  <button id="logoutBtn">🚪</button>
 </div>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+import {
+  getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword,
+  GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+import {
+  getFirestore, doc, getDoc, setDoc, collection, addDoc,
+  onSnapshot, query, orderBy, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
+// Reuse the same Firebase project as before — update if you'd rather use a dedicated project.
 const firebaseConfig = {
   apiKey: "AIzaSyDEl579k9r9NxIVss_QtQTNLoa25CGGSbI",
   authDomain: "notesync-5e7ed.firebaseapp.com",
@@ -146,120 +375,190 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth();
 const db = getFirestore();
-
-const users={
-"kumaraswamyd2005@gmail.com":"Brother",
-"abhilasha3172001@gmail.com":"Sister"
-};
+const googleProvider = new GoogleAuthProvider();
 
 let unsubscribeChat = null;
+let currentRoom = null;
+let lastGeneratedRoom = null;
 
-// ELEMENTS
-const loginBtn=document.getElementById("loginBtn");
-const logoutBtn=document.getElementById("logoutBtn");
-const email=document.getElementById("email");
-const password=document.getElementById("password");
+// ---------- ELEMENTS ----------
 const loginDiv=document.getElementById("loginDiv");
 const mainDiv=document.getElementById("mainDiv");
 const navBar=document.getElementById("navBar");
+const loginError=document.getElementById("loginError");
+
+const email=document.getElementById("email");
+const password=document.getElementById("password");
 
 const chatBox=document.getElementById("chatBox");
 const messageInput=document.getElementById("messageInput");
 const sendBtn=document.getElementById("sendBtn");
+const currentRoomLabel=document.getElementById("currentRoomLabel");
+const whoAmI=document.getElementById("whoAmI");
 
-const onlineStatus=document.getElementById("onlineStatus");
+// ---------- THEME ----------
+window.setTheme=(t)=>{
+  document.body.classList.remove("theme-hacker","theme-light");
+  if(t==="hacker") document.body.classList.add("theme-hacker");
+  if(t==="light") document.body.classList.add("theme-light");
+  localStorage.setItem("cwf-theme",t);
+};
+const savedTheme = localStorage.getItem("cwf-theme");
+if(savedTheme) window.setTheme(savedTheme);
 
-// LOGIN
-loginBtn.onclick=async()=>{
+// ---------- AUTH ----------
+document.getElementById("loginBtn").onclick=async()=>{
+  loginError.textContent="";
   try{
     await signInWithEmailAndPassword(auth,email.value,password.value);
-  }catch(e){ alert(e.message); }
+  }catch(e){ loginError.textContent=e.message; }
 };
 
-logoutBtn.onclick=()=>signOut(auth);
+document.getElementById("signupBtn").onclick=async()=>{
+  loginError.textContent="";
+  try{
+    await createUserWithEmailAndPassword(auth,email.value,password.value);
+  }catch(e){ loginError.textContent=e.message; }
+};
 
-// AUTH
+document.getElementById("googleBtn").onclick=async()=>{
+  loginError.textContent="";
+  try{
+    await signInWithPopup(auth,googleProvider);
+  }catch(e){ loginError.textContent=e.message; }
+};
+
+document.getElementById("logoutBtn").onclick=()=>{
+  leaveRoom();
+  signOut(auth);
+};
+
 onAuthStateChanged(auth,user=>{
-if(user){
+  if(user){
+    loginDiv.style.display="none";
+    mainDiv.style.display="block";
+    navBar.style.display="flex";
+    whoAmI.textContent = user.displayName || user.email;
+    showSection("lobby");
+  }else{
+    loginDiv.style.display="block";
+    mainDiv.style.display="none";
+    navBar.style.display="none";
+  }
+});
 
-loginDiv.style.display="none";
-mainDiv.style.display="block";
-navBar.style.display="flex";
-
-// ONLINE STATUS
-setDoc(doc(db,"status",user.uid),{email:user.email,online:true});
-
-loadChat();
-
-}else{
-loginDiv.style.display="block";
-mainDiv.style.display="none";
-navBar.style.display="none";
+function displayName(){
+  const u=auth.currentUser;
+  return u.displayName || (u.email ? u.email.split("@")[0] : "Friend");
 }
-});
 
-// SEND MESSAGE
-sendBtn.onclick=async()=>{
-if(!messageInput.value.trim()) return;
+// ---------- ROOM CODE ----------
+function genCode(len=6){
+  const chars="ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no confusing chars
+  let c="";
+  for(let i=0;i<len;i++) c+=chars[Math.floor(Math.random()*chars.length)];
+  return c;
+}
 
-sendBtn.disabled=true;
-
-await addDoc(collection(db,"messages"),{
-text:messageInput.value,
-email:auth.currentUser.email,
-name:users[auth.currentUser.email] || "Unknown",
-time:serverTimestamp(),
-seen:false
-});
-
-messageInput.value="";
-sendBtn.disabled=false;
+window.createRoom=async()=>{
+  const code=genCode();
+  await setDoc(doc(db,"rooms",code),{
+    createdBy:auth.currentUser.uid,
+    createdByName:displayName(),
+    createdAt:serverTimestamp()
+  });
+  lastGeneratedRoom=code;
+  document.getElementById("roomCodeDisplay").textContent=code;
+  document.getElementById("roomCodeWrap").style.display="block";
+  document.getElementById("genRoomBtn").style.display="none";
 };
 
-// FIXED CHAT (NO DUPLICATE)
-function loadChat(){
+window.enterCreatedRoom=()=>{
+  if(lastGeneratedRoom) openRoom(lastGeneratedRoom);
+};
 
-if(unsubscribeChat){
-unsubscribeChat();
+window.joinRoomByCode=async()=>{
+  const joinError=document.getElementById("joinError");
+  joinError.textContent="";
+  const codeInput=document.getElementById("joinCodeInput");
+  const code=codeInput.value.trim().toUpperCase();
+  if(!code){ joinError.textContent="Enter a room code."; return; }
+  const snap=await getDoc(doc(db,"rooms",code));
+  if(!snap.exists()){
+    joinError.textContent="Room not found. Check the code and try again.";
+    return;
+  }
+  codeInput.value="";
+  openRoom(code);
+};
+
+function openRoom(code){
+  currentRoom=code;
+  currentRoomLabel.textContent=code;
+  // reset create-room UI for next time
+  document.getElementById("roomCodeWrap").style.display="none";
+  document.getElementById("genRoomBtn").style.display="inline-block";
+  lastGeneratedRoom=null;
+  showSection("chat");
+  loadChat(code);
 }
 
-unsubscribeChat = onSnapshot(
-query(collection(db,"messages"),orderBy("time","asc")),
-(snap)=>{
+window.leaveRoom=()=>{
+  if(unsubscribeChat){ unsubscribeChat(); unsubscribeChat=null; }
+  currentRoom=null;
+  chatBox.innerHTML="";
+};
 
-chatBox.innerHTML="";
+// ---------- CHAT ----------
+sendBtn.onclick=async()=>{
+  if(!messageInput.value.trim() || !currentRoom) return;
+  sendBtn.disabled=true;
 
-let updates = [];
+  await addDoc(collection(db,"rooms",currentRoom,"messages"),{
+    text:messageInput.value,
+    uid:auth.currentUser.uid,
+    name:displayName(),
+    time:serverTimestamp()
+  });
 
-snap.forEach(d=>{
-let m=d.data();
+  messageInput.value="";
+  sendBtn.disabled=false;
+};
 
-// mark seen (batched fix)
-if(m.email!==auth.currentUser.email && !m.seen){
-updates.push(updateDoc(doc(db,"messages",d.id),{seen:true}));
-}
-
-let cls=(m.email===auth.currentUser.email)?"me":"other";
-
-chatBox.innerHTML+=`
-<div class="${cls}">
-<b>${m.name || "Unknown"}</b><br>
-${m.text}
-${m.email===auth.currentUser.email ? (m.seen?" ✔✔":" ✔") : ""}
-</div>`;
+messageInput.addEventListener("keydown",(e)=>{
+  if(e.key==="Enter") sendBtn.click();
 });
 
-// apply updates after loop
-Promise.all(updates);
+function loadChat(code){
+  if(unsubscribeChat) unsubscribeChat();
 
-chatBox.scrollTop=chatBox.scrollHeight;
-});
+  unsubscribeChat = onSnapshot(
+    query(collection(db,"rooms",code,"messages"),orderBy("time","asc")),
+    (snap)=>{
+      chatBox.innerHTML="";
+      snap.forEach(d=>{
+        const m=d.data();
+        const mine = m.uid===auth.currentUser.uid;
+        const row=document.createElement("div");
+        row.className="msgRow "+(mine?"me":"other");
+        row.innerHTML=`<div class="bubble">${!mine?`<span class="sender">${m.name||"Friend"}</span>`:""}${escapeHtml(m.text)}</div>`;
+        chatBox.appendChild(row);
+      });
+      chatBox.scrollTop=chatBox.scrollHeight;
+    }
+  );
 }
 
-// NAV
+function escapeHtml(str){
+  const div=document.createElement("div");
+  div.textContent=str;
+  return div.innerHTML;
+}
+
+// ---------- NAV ----------
 window.showSection=id=>{
-document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
-document.getElementById(id).classList.add("active");
+  document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
 };
 
 </script>
