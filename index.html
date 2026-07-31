@@ -295,6 +295,11 @@
     <div class="card">
       <p class="muted">Signed in as <b id="whoAmI"></b></p>
       <h2>Chat With Friend</h2>
+      <p class="muted" style="margin-bottom:2px;">Your display name (shown to your friend in chat)</p>
+      <input type="text" id="nicknameInput" placeholder="e.g. Kumar" maxlength="20">
+      <br>
+      <button class="ghost-btn" onclick="saveNickname()">Save Name</button>
+      <p id="nicknameMsg" style="font-size:12px;color:green;height:14px;"></p>
       <div class="bigChoice">
         <button onclick="showSection('createRoom')">➕ Create Room</button>
         <button onclick="showSection('joinRoom')">🔑 Join Room</button>
@@ -380,6 +385,7 @@ const googleProvider = new GoogleAuthProvider();
 let unsubscribeChat = null;
 let currentRoom = null;
 let lastGeneratedRoom = null;
+let nicknameValue = null;
 
 // ---------- ELEMENTS ----------
 const loginDiv=document.getElementById("loginDiv");
@@ -433,23 +439,44 @@ document.getElementById("logoutBtn").onclick=()=>{
   signOut(auth);
 };
 
-onAuthStateChanged(auth,user=>{
+onAuthStateChanged(auth,async user=>{
   if(user){
     loginDiv.style.display="none";
     mainDiv.style.display="block";
     navBar.style.display="flex";
     whoAmI.textContent = user.displayName || user.email;
     showSection("lobby");
+
+    // load saved nickname (if any) from Firestore
+    const userDoc = await getDoc(doc(db,"users",user.uid));
+    if(userDoc.exists() && userDoc.data().nickname){
+      nicknameValue = userDoc.data().nickname;
+    }else{
+      nicknameValue = user.displayName || (user.email ? user.email.split("@")[0] : "Friend");
+    }
+    document.getElementById("nicknameInput").value = nicknameValue;
   }else{
     loginDiv.style.display="block";
     mainDiv.style.display="none";
     navBar.style.display="none";
+    nicknameValue=null;
   }
 });
 
+window.saveNickname=async()=>{
+  const input=document.getElementById("nicknameInput");
+  const msg=document.getElementById("nicknameMsg");
+  const name=input.value.trim();
+  if(!name){ msg.style.color="red"; msg.textContent="Enter a name first."; return; }
+  nicknameValue=name;
+  await setDoc(doc(db,"users",auth.currentUser.uid),{nickname:name},{merge:true});
+  msg.style.color="green";
+  msg.textContent="Saved!";
+  setTimeout(()=>{ msg.textContent=""; },1500);
+};
+
 function displayName(){
-  const u=auth.currentUser;
-  return u.displayName || (u.email ? u.email.split("@")[0] : "Friend");
+  return nicknameValue || (auth.currentUser.email ? auth.currentUser.email.split("@")[0] : "Friend");
 }
 
 // ---------- ROOM CODE ----------
