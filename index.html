@@ -373,7 +373,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
 import {
   getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword,
-  GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut
+  GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut
 } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 import {
   getFirestore, doc, getDoc, setDoc, collection, addDoc,
@@ -443,9 +443,15 @@ document.getElementById("signupBtn").onclick=async()=>{
 document.getElementById("googleBtn").onclick=async()=>{
   loginError.textContent="";
   try{
-    await signInWithPopup(auth,googleProvider);
+    await signInWithRedirect(auth,googleProvider);
+    // page will navigate away to Google and come back; onAuthStateChanged + getRedirectResult below handle the rest
   }catch(e){ loginError.textContent=e.message; }
 };
+
+// After returning from Google's sign-in page, this picks up the result (and surfaces any error)
+getRedirectResult(auth).catch(e=>{
+  loginError.textContent = e.message;
+});
 
 document.getElementById("logoutBtn").onclick=()=>{
   leaveRoom();
