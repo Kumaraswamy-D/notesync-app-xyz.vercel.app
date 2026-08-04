@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <title>Chat With Friend</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#000000">
+<link rel="icon" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+
 
 <style>
   :root{
@@ -311,7 +316,15 @@
   <div id="createRoom" class="section">
     <div class="card">
       <h2>Create Room</h2>
-      <button id="genRoomBtn" onclick="createRoom()">Generate Room Code</button>
+      <div id="customCodeWrap">
+        <p class="muted">Pick your own room code (your friend will enter this exact code to join)</p>
+        <input type="text" id="customCodeInput" placeholder="e.g. KUMAR-ABHI" maxlength="20" style="text-transform:uppercase;letter-spacing:2px;text-align:center;">
+        <br>
+        <button id="createRoomBtn" onclick="createRoom()">Create Room</button>
+        <p class="muted" style="font-size:12px;">or</p>
+        <button class="ghost-btn" onclick="createRoom(true)">Generate Random Code Instead</button>
+        <p id="createRoomError" style="color:red;font-size:13px;"></p>
+      </div>
       <div id="roomCodeWrap" style="display:none;">
         <p class="muted">Share this code with your friend:</p>
         <div id="roomCodeDisplay"></div><br>
@@ -487,17 +500,49 @@ function genCode(len=6){
   return c;
 }
 
-window.createRoom=async()=>{
-  const code=genCode();
+function isValidCode(code){
+  // letters, numbers, hyphens/underscores only, 3-20 chars
+  return /^[A-Z0-9_-]{3,20}$/.test(code);
+}
+
+window.createRoom=async(useRandom=false)=>{
+  const errEl=document.getElementById("createRoomError");
+  const btn=document.getElementById("createRoomBtn");
+  errEl.textContent="";
+
+  let code;
+  if(useRandom){
+    code=genCode();
+  }else{
+    code=document.getElementById("customCodeInput").value.trim().toUpperCase();
+    if(!code){ errEl.textContent="Type a room code first, or use the random option."; return; }
+    if(!isValidCode(code)){
+      errEl.textContent="Use 3-20 letters/numbers only (hyphens & underscores OK, no spaces).";
+      return;
+    }
+  }
+
+  btn.disabled=true;
+
+  // make sure this code isn't already taken
+  const existing=await getDoc(doc(db,"rooms",code));
+  if(existing.exists()){
+    errEl.textContent=`"${code}" is already taken. Try a different code.`;
+    btn.disabled=false;
+    return;
+  }
+
   await setDoc(doc(db,"rooms",code),{
     createdBy:auth.currentUser.uid,
     createdByName:displayName(),
     createdAt:serverTimestamp()
   });
+
+  btn.disabled=false;
   lastGeneratedRoom=code;
   document.getElementById("roomCodeDisplay").textContent=code;
+  document.getElementById("customCodeWrap").style.display="none";
   document.getElementById("roomCodeWrap").style.display="block";
-  document.getElementById("genRoomBtn").style.display="none";
 };
 
 window.enterCreatedRoom=()=>{
@@ -524,7 +569,9 @@ function openRoom(code){
   currentRoomLabel.textContent=code;
   // reset create-room UI for next time
   document.getElementById("roomCodeWrap").style.display="none";
-  document.getElementById("genRoomBtn").style.display="inline-block";
+  document.getElementById("customCodeWrap").style.display="block";
+  document.getElementById("customCodeInput").value="";
+  document.getElementById("createRoomError").textContent="";
   lastGeneratedRoom=null;
   showSection("chat");
   loadChat(code);
